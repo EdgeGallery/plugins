@@ -16,7 +16,11 @@
 
 package watcher
 
+//MaxSize is Max log file size.
 const MaxSize = 20
-const MaxBackups = 50
-const MaxAge = 30
 
+//MaxBackups is Max no of backup.
+const MaxBackups = 50
+
+//MaxAge of logfiles to be stored.
+const MaxAge = 30
