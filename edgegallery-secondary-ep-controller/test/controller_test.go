@@ -1,11 +1,15 @@
 package test
 
 import (
+	"edgegallery-secondary-ep-controller/watcher"
+	"errors"
+	"reflect"
+	"testing"
+
 	"github.com/agiledragon/gomonkey"
 	"github.com/intel/multus-cni/types"
 	netattachv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	netattachfake "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/fake"
-	"github.com/pkg/errors"
 	"github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -13,24 +17,21 @@ import (
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"edgegallery-secondary-ep-controller/watcher"
-	"reflect"
-	"testing"
 )
 
-const(
+const (
 	CONTROLLER_INIT string = "Error in controller init"
-	ENDPOINTS  = "Endpoints"
-	DEFAULT = "default"
-	WRK_QUEUE_EMPTY = "Workeue should be empty"
-	SERVICE = "Service"
-	V1 = "v1"
-	IP1 = "100.1.1.1"
-	HTTP_PORT = "httpPort"
+	ENDPOINTS              = "Endpoints"
+	DEFAULT                = "default"
+	WRK_QUEUE_EMPTY        = "Workeue should be empty"
+	SERVICE                = "Service"
+	V1                     = "v1"
+	IP1                    = "100.1.1.1"
+	HTTP_PORT              = "httpPort"
 )
 
-func TestInitNetworkController (t *testing.T) {
-	convey.Convey( "Testing Init network controller", t, func() {
+func TestInitNetworkController(t *testing.T) {
+	convey.Convey("Testing Init network controller", t, func() {
 		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
@@ -40,8 +41,8 @@ func TestInitNetworkController (t *testing.T) {
 	})
 }
 
-func TestAddOrDelEndpointEvent (t *testing.T) {
-	convey.Convey( "Testing Successfully added services to workqueue after Endpoint event received", t, func() {
+func TestAddOrDelEndpointEvent(t *testing.T) {
+	convey.Convey("Testing Successfully added services to workqueue after Endpoint event received", t, func() {
 		fakeEp := &corev1.Endpoints{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       ENDPOINTS,
@@ -68,7 +69,7 @@ func TestAddOrDelEndpointEvent (t *testing.T) {
 				},
 			},
 		}
-        fakeservice := &corev1.Service{
+		fakeservice := &corev1.Service{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       SERVICE,
 				APIVersion: V1,
@@ -85,7 +86,7 @@ func TestAddOrDelEndpointEvent (t *testing.T) {
 			clientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		var n *watcher.Controller
-		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices",func(*watcher.Controller, string, string) (*corev1.Service, error) {
+		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
 			return fakeservice, nil
 		})
 		networkController.AddOrDelEndpointEvent(fakeEp)
@@ -97,8 +98,8 @@ func TestAddOrDelEndpointEvent (t *testing.T) {
 	})
 }
 
-func TestAddOrDelEndpointEventServiceNotfound (t *testing.T) {
-	convey.Convey( "Testing Successfully added services to workqueue after Endpoint event received", t, func() {
+func TestAddOrDelEndpointEventServiceNotfound(t *testing.T) {
+	convey.Convey("Testing Successfully added services to workqueue after Endpoint event received", t, func() {
 		fakeEp := &corev1.Endpoints{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       ENDPOINTS,
@@ -132,7 +133,7 @@ func TestAddOrDelEndpointEventServiceNotfound (t *testing.T) {
 			clientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		var n *watcher.Controller
-		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices",func(*watcher.Controller, string, string) (*corev1.Service, error) {
+		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
 			return nil, errors.New("service not found")
 		})
 		networkController.AddOrDelEndpointEvent(fakeEp)
@@ -141,16 +142,16 @@ func TestAddOrDelEndpointEventServiceNotfound (t *testing.T) {
 	})
 }
 
-func TestUpdateEndPointEvent (t *testing.T) {
-	convey.Convey( "Testing Successfully added services to workqueue after Update Endpoint event received", t, func() {
+func TestUpdateEndPointEvent(t *testing.T) {
+	convey.Convey("Testing Successfully added services to workqueue after Update Endpoint event received", t, func() {
 		fakeEpOld := &corev1.Endpoints{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       ENDPOINTS,
 				APIVersion: V1,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: DEFAULT,
+				Name:            "foo",
+				Namespace:       DEFAULT,
 				ResourceVersion: "1",
 			},
 			Subsets: []corev1.EndpointSubset{
@@ -176,8 +177,8 @@ func TestUpdateEndPointEvent (t *testing.T) {
 				APIVersion: V1,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: DEFAULT,
+				Name:            "foo",
+				Namespace:       DEFAULT,
 				ResourceVersion: "2",
 			},
 			Subsets: []corev1.EndpointSubset{
@@ -214,7 +215,7 @@ func TestUpdateEndPointEvent (t *testing.T) {
 			clientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		var n *watcher.Controller
-		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices",func(*watcher.Controller, string, string) (*corev1.Service, error) {
+		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
 			return fakeservice, nil
 		})
 		networkController.UpdateEndPoint(fakeEpOld, fakeEpNew)
@@ -226,8 +227,8 @@ func TestUpdateEndPointEvent (t *testing.T) {
 	})
 }
 
-func TestAddServiceEventSuccess (t *testing.T) {
-	convey.Convey( "Testing Successfully added services to workqueue after service event received", t, func() {
+func TestAddServiceEventSuccess(t *testing.T) {
+	convey.Convey("Testing Successfully added services to workqueue after service event received", t, func() {
 		fakeService := &corev1.Service{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       SERVICE,
@@ -251,15 +252,14 @@ func TestAddServiceEventSuccess (t *testing.T) {
 	})
 }
 
-func TestAddServiceEventFailure (t *testing.T) {
-	convey.Convey( "Testing Failure to add services to workqueue after service event received", t, func() {
+func TestAddServiceEventFailure(t *testing.T) {
+	convey.Convey("Testing Failure to add services to workqueue after service event received", t, func() {
 		fakeService := &corev1.Service{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       SERVICE,
 				APIVersion: V1,
 			},
-			ObjectMeta: metav1.ObjectMeta{
-			},
+			ObjectMeta: metav1.ObjectMeta{},
 		}
 		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
@@ -278,8 +278,8 @@ func TestAddServiceEventFailure (t *testing.T) {
 	})
 }
 
-func TestUpdateSvcEvent (t *testing.T) {
-	convey.Convey( "Testing Update services to workqueue after service event received, but no change in service", t, func() {
+func TestUpdateSvcEvent(t *testing.T) {
+	convey.Convey("Testing Update services to workqueue after service event received, but no change in service", t, func() {
 		fakeServiceOld := &corev1.Service{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       SERVICE,
@@ -315,18 +315,18 @@ func TestUpdateSvcEvent (t *testing.T) {
 	})
 }
 
-func TestUpdatePodEvent (t *testing.T) {
-	convey.Convey( "Testing Update services to workqueue after pod event received", t, func() {
+func TestUpdatePodEvent(t *testing.T) {
+	convey.Convey("Testing Update services to workqueue after pod event received", t, func() {
 		fakePodOld := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "fakePod1",
-				Namespace: "fakeNamespace1",
+				Name:            "fakePod1",
+				Namespace:       "fakeNamespace1",
 				ResourceVersion: "0",
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Name: "fakeContainer",
+						Name:  "fakeContainer",
 						Image: "fakeImage",
 					},
 				},
@@ -334,14 +334,14 @@ func TestUpdatePodEvent (t *testing.T) {
 		}
 		fakePodNew := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "fakePod1",
-				Namespace: "fakeNamespace1",
+				Name:            "fakePod1",
+				Namespace:       "fakeNamespace1",
 				ResourceVersion: "1",
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Name: "fakeContainer",
+						Name:  "fakeContainer",
 						Image: "fakeImage",
 					},
 				},
@@ -379,7 +379,7 @@ func TestUpdatePodEvent (t *testing.T) {
 			},
 		}
 		var services []*corev1.Service
-		patch2 := gomonkey.ApplyFunc(watcher.GetPodServices,func(corelisters.ServiceLister, *corev1.Pod) ([]*corev1.Service, error) {
+		patch2 := gomonkey.ApplyFunc(watcher.GetPodServices, func(corelisters.ServiceLister, *corev1.Pod) ([]*corev1.Service, error) {
 			services = append(services, fakeService)
 			return services, nil
 		})
@@ -394,8 +394,8 @@ func TestUpdatePodEvent (t *testing.T) {
 	})
 }
 
-func TestHandleItemError (t *testing.T) {
-	convey.Convey( "Testing Handle workeue item", t, func() {
+func TestHandleItemError(t *testing.T) {
+	convey.Convey("Testing Handle workeue item", t, func() {
 		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
@@ -424,10 +424,10 @@ func TestHandleItemError (t *testing.T) {
 		}
 
 		var n1 *watcher.Controller
-		patch2 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetServices",func(*watcher.Controller, string, string) (*corev1.Service, error) {
+		patch2 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
 			return fakeService1, nil
 		})
-    	err = networkController.HandleItem(DEFAULT)
+		err = networkController.HandleItem(DEFAULT)
 		assert.Equal(t, "no network annotations", err.Error(), "Service shouldn't exist")
 		patch2.Reset()
 
@@ -438,17 +438,17 @@ func TestHandleItemError (t *testing.T) {
 				APIVersion: V1,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "mepserver",
-				Namespace: DEFAULT,
+				Name:            "mepserver",
+				Namespace:       DEFAULT,
 				ResourceVersion: "1",
 				Annotations: map[string]string{
-					"k8s.v1.cni.cncf.io/networks" : "default/macvlan-conf1, default/macvlan-conf2",
+					"k8s.v1.cni.cncf.io/networks": "default/macvlan-conf1, default/macvlan-conf2",
 				},
 			},
 		}
 
 		var n2 *watcher.Controller
-		patch3 := gomonkey.ApplyMethod(reflect.TypeOf(n2), "GetServices",func(*watcher.Controller, string, string) (*corev1.Service, error) {
+		patch3 := gomonkey.ApplyMethod(reflect.TypeOf(n2), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
 			return fakeService2, nil
 		})
 		defer patch3.Reset()
@@ -459,8 +459,8 @@ func TestHandleItemError (t *testing.T) {
 	})
 }
 
-func TestHandleItemError2 (t *testing.T) {
-	convey.Convey( "Testing Handle workeue item", t, func() {
+func TestHandleItemError2(t *testing.T) {
+	convey.Convey("Testing Handle workeue item", t, func() {
 		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
@@ -480,20 +480,20 @@ func TestHandleItemError2 (t *testing.T) {
 				APIVersion: V1,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "mepserver",
-				Namespace: DEFAULT,
+				Name:            "mepserver",
+				Namespace:       DEFAULT,
 				ResourceVersion: "1",
 				Annotations: map[string]string{
-					"k8s.v1.cni.cncf.io/networks" : "default/macvlan-conf1",
+					"k8s.v1.cni.cncf.io/networks": "default/macvlan-conf1",
 				},
 			},
 		}
 
 		var n2 *watcher.Controller
-		patch2 := gomonkey.ApplyMethod(reflect.TypeOf(n2), "GetServices",func(*watcher.Controller, string, string) (*corev1.Service, error) {
+		patch2 := gomonkey.ApplyMethod(reflect.TypeOf(n2), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
 			return fakeService2, nil
 		})
-		patch3 := gomonkey.ApplyMethod(reflect.TypeOf(n2), "GetPodsOfService",func(*watcher.Controller, *corev1.Service) ([]*corev1.Pod, error) {
+		patch3 := gomonkey.ApplyMethod(reflect.TypeOf(n2), "GetPodsOfService", func(*watcher.Controller, *corev1.Service) ([]*corev1.Pod, error) {
 			return nil, errors.New("No pod exist with matching selector")
 		})
 		err := networkController.HandleItem("mepserver")
@@ -503,24 +503,24 @@ func TestHandleItemError2 (t *testing.T) {
 
 		fakePod := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "fakePod1",
+				Name:      "fakePod1",
 				Namespace: DEFAULT,
 				Annotations: map[string]string{
-					"k8s.v1.cni.cncf.io/networks" : "macvlan-conf1",
-					"k8s.v1.cni.cncf.io/networks-status" : "[{\n        \"name\": \"openshift-sdn\",\n        \"ips\": [\n            \"10.131.0.10\"\n        ],\n        \"default\": true,\n        \"dns\": {}\n}]",
+					"k8s.v1.cni.cncf.io/networks":        "macvlan-conf1",
+					"k8s.v1.cni.cncf.io/networks-status": "[{\n        \"name\": \"openshift-sdn\",\n        \"ips\": [\n            \"10.131.0.10\"\n        ],\n        \"default\": true,\n        \"dns\": {}\n}]",
 				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Name: "fakeContainer",
+						Name:  "fakeContainer",
 						Image: "fakeImage",
 					},
 				},
 			},
 		}
 		var n3 *watcher.Controller
-		patch4 := gomonkey.ApplyMethod(reflect.TypeOf(n3), "GetPodsOfService",func(*watcher.Controller, *corev1.Service) ([]*corev1.Pod, error) {
+		patch4 := gomonkey.ApplyMethod(reflect.TypeOf(n3), "GetPodsOfService", func(*watcher.Controller, *corev1.Service) ([]*corev1.Pod, error) {
 			var podList []*corev1.Pod
 			podList = append(podList, fakePod)
 			return podList, nil
@@ -533,8 +533,8 @@ func TestHandleItemError2 (t *testing.T) {
 	})
 }
 
-func TestHandleItemWithServiceExist (t *testing.T) {
-	convey.Convey( "Testing Handle service items", t, func() {
+func TestHandleItemWithServiceExist(t *testing.T) {
+	convey.Convey("Testing Handle service items", t, func() {
 		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
@@ -545,17 +545,17 @@ func TestHandleItemWithServiceExist (t *testing.T) {
 		//Service exist with a network
 		fakePod := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "fakePod1",
+				Name:      "fakePod1",
 				Namespace: DEFAULT,
 				Annotations: map[string]string{
-					"k8s.v1.cni.cncf.io/networks" : "macvlan-conf1",
-					"k8s.v1.cni.cncf.io/networks-status" : "[{\n        \"name\": \"openshift-sdn\",\n        \"ips\": [\n            \"10.131.0.10\"\n        ],\n        \"default\": true,\n        \"dns\": {}\n}]",
+					"k8s.v1.cni.cncf.io/networks":        "macvlan-conf1",
+					"k8s.v1.cni.cncf.io/networks-status": "[{\n        \"name\": \"openshift-sdn\",\n        \"ips\": [\n            \"10.131.0.10\"\n        ],\n        \"default\": true,\n        \"dns\": {}\n}]",
 				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Name: "fakeContainer",
+						Name:  "fakeContainer",
 						Image: "fakeImage",
 					},
 				},
@@ -567,18 +567,18 @@ func TestHandleItemWithServiceExist (t *testing.T) {
 				APIVersion: V1,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "mepserver",
-				Namespace: DEFAULT,
+				Name:            "mepserver",
+				Namespace:       DEFAULT,
 				ResourceVersion: "1",
 				Annotations: map[string]string{
-					"k8s.v1.cni.cncf.io/networks" : "default/macvlan-conf1",
+					"k8s.v1.cni.cncf.io/networks": "default/macvlan-conf1",
 				},
 			},
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
-						Name: "myport",
-						Port: 30000,
+						Name:     "myport",
+						Port:     30000,
 						Protocol: corev1.ProtocolTCP,
 					},
 				},
@@ -611,29 +611,29 @@ func TestHandleItemWithServiceExist (t *testing.T) {
 			},
 		}
 		var n1 *watcher.Controller
-		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetServices",func(*watcher.Controller, string, string) (*corev1.Service, error) {
+		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
 			return fakeService2, nil
 		})
 		defer patch1.Reset()
 
-		patch2 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetPodsOfService",func(*watcher.Controller, *corev1.Service) ([]*corev1.Pod, error) {
+		patch2 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetPodsOfService", func(*watcher.Controller, *corev1.Service) ([]*corev1.Pod, error) {
 			var podList []*corev1.Pod
 			podList = append(podList, fakePod)
 			return podList, nil
 		})
 		defer patch2.Reset()
 
-		patch3 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetEndpoints",func(*watcher.Controller, string, string) (*corev1.Endpoints, error) {
+		patch3 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetEndpoints", func(*watcher.Controller, string, string) (*corev1.Endpoints, error) {
 			return fakeEp, nil
 		})
 		defer patch3.Reset()
 
-		patch4 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "UpdateEndpoints",func(*watcher.Controller, *corev1.Endpoints) error {
+		patch4 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "UpdateEndpoints", func(*watcher.Controller, *corev1.Endpoints) error {
 			return nil
 		})
 		defer patch4.Reset()
 
-		patch5 := gomonkey.ApplyFunc(watcher.IsInNetworkSelectionElementsArray,func(string, []*types.NetworkSelectionElement) bool {
+		patch5 := gomonkey.ApplyFunc(watcher.IsInNetworkSelectionElementsArray, func(string, []*types.NetworkSelectionElement) bool {
 			return true
 		})
 		defer patch5.Reset()
@@ -644,8 +644,8 @@ func TestHandleItemWithServiceExist (t *testing.T) {
 	})
 }
 
-func TestHandleNetAttachDefDeleteEvent (t *testing.T) {
-	convey.Convey( "Testing Handle workeue item", t, func() {
+func TestHandleNetAttachDefDeleteEvent(t *testing.T) {
+	convey.Convey("Testing Handle workeue item", t, func() {
 		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
@@ -660,23 +660,23 @@ func TestHandleNetAttachDefDeleteEvent (t *testing.T) {
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				ResourceVersion: "1",
-				Namespace: DEFAULT,
-				Name: "macvlan-conf1",
+				Namespace:       DEFAULT,
+				Name:            "macvlan-conf1",
 			},
 		}
 		fakePod := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "fakePod1",
+				Name:      "fakePod1",
 				Namespace: DEFAULT,
 				Annotations: map[string]string{
-					"k8s.v1.cni.cncf.io/networks" : "macvlan-conf1",
-					"k8s.v1.cni.cncf.io/networks-status" : "[{\n        \"name\": \"openshift-sdn\",\n        \"ips\": [\n            \"10.131.0.10\"\n        ],\n        \"default\": true,\n        \"dns\": {}\n}]",
+					"k8s.v1.cni.cncf.io/networks":        "macvlan-conf1",
+					"k8s.v1.cni.cncf.io/networks-status": "[{\n        \"name\": \"openshift-sdn\",\n        \"ips\": [\n            \"10.131.0.10\"\n        ],\n        \"default\": true,\n        \"dns\": {}\n}]",
 				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Name: "fakeContainer",
+						Name:  "fakeContainer",
 						Image: "fakeImage",
 					},
 				},
@@ -684,7 +684,7 @@ func TestHandleNetAttachDefDeleteEvent (t *testing.T) {
 		}
 		var n1 *watcher.Controller
 		var pods []*corev1.Pod
-		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetAllPods",func(*watcher.Controller) ([]*corev1.Pod, error) {
+		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetAllPods", func(*watcher.Controller) ([]*corev1.Pod, error) {
 			pods := append(pods, fakePod)
 			return pods, nil
 		})
@@ -695,7 +695,7 @@ func TestHandleNetAttachDefDeleteEvent (t *testing.T) {
 }
 
 func TestProcessNextWorkItemError(t *testing.T) {
-	convey.Convey( "Testing workeue item", t, func() {
+	convey.Convey("Testing workeue item", t, func() {
 		fakeService := &corev1.Service{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       SERVICE,
@@ -742,7 +742,7 @@ func TestProcessNextWorkItemSuccess(t *testing.T) {
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		networkController.AddServiceEvent(fakeService)
 		var n1 *watcher.Controller
-		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "HandleItem",func(*watcher.Controller, string) error {
+		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "HandleItem", func(*watcher.Controller, string) error {
 			return nil
 		})
 		defer patch1.Reset()

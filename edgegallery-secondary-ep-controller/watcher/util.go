@@ -17,8 +17,11 @@
 package watcher
 
 import (
+	"errors"
+	"regexp"
+	"strings"
+
 	"github.com/intel/multus-cni/types"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,10 +29,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
-	"regexp"
-	"strings"
 )
 
+//GetNetworkAnnotations Read network annotation from svc
 func GetNetworkAnnotations(obj interface{}) string {
 	metaObject := obj.(metav1.Object)
 	annotations, ok := metaObject.GetAnnotations()[selectionsKey]
@@ -39,6 +41,7 @@ func GetNetworkAnnotations(obj interface{}) string {
 	return annotations
 }
 
+//ParsePodNetworkSelections Parse network selection
 func ParsePodNetworkSelections(podNetworks string, defaultNamespace string) ([]*types.NetworkSelectionElement, error) {
 	var networkSelections []*types.NetworkSelectionElement
 
@@ -48,23 +51,22 @@ func ParsePodNetworkSelections(podNetworks string, defaultNamespace string) ([]*
 		return nil, err
 	}
 
-
 	for _, networkSelection := range strings.Split(podNetworks, ",") {
 		networkSelection = strings.TrimSpace(networkSelection)
 		networkSelectionElement, err := ParsePodNetworkSelectionElement(networkSelection, defaultNamespace)
 		if err != nil {
-			err := errors.Wrap(err, "error parsing network selection element")
+			err := errors.New("error parsing network selection element")
 			log.Error(err)
 			return nil, err
 		}
 		networkSelections = append(networkSelections, networkSelectionElement)
 	}
 
-
 	return networkSelections, nil
 }
 
-func ResolveNeworkAnnotation(annotation string, defaultNamespace string) (string , string,  error) {
+//ResolveNeworkAnnotation prse network annotation from svc
+func ResolveNeworkAnnotation(annotation string, defaultNamespace string) (string, string, error) {
 	var namespace, name string
 	units := strings.Split(annotation, "/")
 	switch len(units) {
@@ -75,19 +77,21 @@ func ResolveNeworkAnnotation(annotation string, defaultNamespace string) (string
 		namespace = units[0]
 		name = units[1]
 	default:
-		err := errors.Errorf("invalid network selection element - more than one '/' rune in: '%s'", annotation)
+		err := errors.New("invalid network selection element - more than one / symbol")
 		log.Error(err)
 		return "", "", err
 	}
 	return namespace, name, nil
 
 }
+
+//ParsePodNetworkSelectionElement parse network selection element
 func ParsePodNetworkSelectionElement(selection string, defaultNamespace string) (*types.NetworkSelectionElement, error) {
 	var namespace, name string
 	var networkSelectionElement *types.NetworkSelectionElement
 
-	namespace, name, err := ResolveNeworkAnnotation(selection,defaultNamespace)
-    if err != nil {
+	namespace, name, err := ResolveNeworkAnnotation(selection, defaultNamespace)
+	if err != nil {
 		log.Error(err)
 		return networkSelectionElement, err
 	}
@@ -96,19 +100,20 @@ func ParsePodNetworkSelectionElement(selection string, defaultNamespace string) 
 	for _, unit := range []string{namespace, name} {
 		ok := validNameRegex.MatchString(unit)
 		if !ok && len(unit) > 0 {
-			err := errors.Errorf("at least one of the network selection units is invalid: error found at '%s'", unit)
+			err := errors.New("at least one of the network selection units is invalid")
 			log.Error(err)
 			return networkSelectionElement, err
 		}
 	}
 
 	networkSelectionElement = &types.NetworkSelectionElement{
-		Namespace:        namespace,
-		Name:             name,
+		Namespace: namespace,
+		Name:      name,
 	}
 	return networkSelectionElement, nil
 }
 
+//IsInNetworkSelectionElementsArray finds if networks belongs to list
 func IsInNetworkSelectionElementsArray(name string, networks []*types.NetworkSelectionElement) bool {
 	for i := range networks {
 		log.Infof("checking service network %s === pod network %s ", name, networks[i].Name)

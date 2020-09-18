@@ -44,4 +44,3 @@ func init() {
 	}
 	logrus.SetLevel(logrus.InfoLevel)
 }
-

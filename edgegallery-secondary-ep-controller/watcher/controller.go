@@ -13,17 +13,20 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 package watcher
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
+
 	"github.com/intel/multus-cni/types"
 	netattachdef "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	clientset "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned"
 	sharedInformers "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/informers/externalversions"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,9 +42,9 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/api/v1/endpoints"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
-	"time"
 )
 
+// Controller main structure.
 type Controller struct {
 	ClientSet           kubernetes.Interface //Client to get information of k8s resources, svcs, pods etc.
 	NetWatcherClientSet clientset.Interface  //Client to get information of custom net-attachment
@@ -70,6 +73,7 @@ const (
 	controllerAgentName = "edgegallery-secondary-ep-controller"
 )
 
+// NewNetworkController returns a new controller structure.
 func NewNetworkController(
 	clientSet kubernetes.Interface,
 	netWatcherClientSet clientset.Interface) *Controller {
@@ -80,9 +84,9 @@ func NewNetworkController(
 	netAttachDefFactory := sharedInformers.NewSharedInformerFactory(netWatcherClientSet, time.Second*5)
 
 	netWatcherInformer := netAttachDefFactory.K8sCniCncfIo().V1().NetworkAttachmentDefinitions()
-	svcInformer:= kubeInformerFactory.Core().V1().Services()
+	svcInformer := kubeInformerFactory.Core().V1().Services()
 	podInformer := kubeInformerFactory.Core().V1().Pods()
-	epInformer:= kubeInformerFactory.Core().V1().Endpoints()
+	epInformer := kubeInformerFactory.Core().V1().Endpoints()
 
 	NetworkController := &Controller{
 		ClientSet:           clientSet,
@@ -125,21 +129,23 @@ func NewNetworkController(
 	return NetworkController
 }
 
+//AddOrDelEndpointEvent Handles Add or Delete endpoint event.
 func (c *Controller) AddOrDelEndpointEvent(obj interface{}) {
 	ep := obj.(*corev1.Endpoints)
-	log.Infof("received endpoint add/del event %s", ep.Name)
+
 	// get service associated with endpoints instance
-	svc, err := c.GetServices(ep.GetNamespace(),ep.GetName())
+	svc, err := c.GetServices(ep.GetNamespace(), ep.GetName())
 	if err != nil {
 		return
 	}
 	c.AddServiceEvent(svc)
 }
 
+//UpdatePod Handles update event.
 func (c *Controller) UpdatePod(old, new interface{}) {
 	oldPod := old.(*corev1.Pod)
 	newPod := new.(*corev1.Pod)
-	log.Infof("received update pod event %s", oldPod.Name)
+
 	if oldPod.ResourceVersion == newPod.ResourceVersion || newPod.ObjectMeta.DeletionTimestamp != nil {
 		return
 	}
@@ -152,7 +158,6 @@ func (c *Controller) addOrDelPodEvent(obj interface{}) {
 		return
 	}
 
-	log.Infof("received add/del pod event %s", pod.Name)
 	_, ok = pod.GetAnnotations()[selectionsKey]
 	if !ok {
 		log.Info("skipping pod event: network annotations missing")
@@ -170,6 +175,7 @@ func (c *Controller) addOrDelPodEvent(obj interface{}) {
 	}
 }
 
+// AddServiceEvent handles adding service event
 func (c *Controller) AddServiceEvent(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
@@ -179,26 +185,29 @@ func (c *Controller) AddServiceEvent(obj interface{}) {
 	c.Workqueue.AddRateLimited(key)
 }
 
+//UpdateEndPoint handles endpoint update event
 func (c *Controller) UpdateEndPoint(old, new interface{}) {
 	oldEp := old.(*corev1.Endpoints)
 	newEp := new.(*corev1.Endpoints)
-	log.Infof("received endpoint update event %s", oldEp.Name)
+
 	if oldEp.ResourceVersion == newEp.ResourceVersion {
 		return
 	}
 	c.AddOrDelEndpointEvent(new)
 }
 
+//UpdateSvc handles sevice change event
 func (c *Controller) UpdateSvc(old, new interface{}) {
 	oldSvc := old.(*corev1.Service)
 	newSvc := new.(*corev1.Service)
-	log.Infof("received service update event %s", oldSvc.Name)
+
 	if oldSvc.ResourceVersion == newSvc.ResourceVersion {
 		return
 	}
 	c.AddServiceEvent(new)
 }
 
+//Run process evts from workqueue
 func (c *Controller) Run(stopChan <-chan struct{}) {
 	log.Infof("starting network controller at %s", time.Now().Local())
 	defer runtime.HandleCrash()
@@ -224,6 +233,7 @@ func (c *Controller) runWorker() {
 	}
 }
 
+//ProcessNextWorkItem handles svc
 func (c *Controller) ProcessNextWorkItem() bool {
 	obj, shouldQuit := c.Workqueue.Get()
 	if shouldQuit {
@@ -256,8 +266,8 @@ func (c *Controller) ProcessNextWorkItem() bool {
 	return true
 }
 
+//HandleItem handles individual items from work queue
 func (c *Controller) HandleItem(key string) error {
-
 	pods, svc, ep, networks, err := c.GetResources(key)
 	if err != nil {
 		return err
@@ -304,7 +314,8 @@ func (c *Controller) HandleItem(key string) error {
 	return nil
 }
 
-func (c *Controller)GetCurrentAddressList(pod *corev1.Pod, networks []*types.NetworkSelectionElement) ([]corev1.EndpointAddress, error) {
+//GetCurrentAddressList gets addresslist from pods
+func (c *Controller) GetCurrentAddressList(pod *corev1.Pod, networks []*types.NetworkSelectionElement) ([]corev1.EndpointAddress, error) {
 	networksStatus := make([]types.NetworkStatus, 0)
 	err := json.Unmarshal([]byte(pod.Annotations[statusesKey]), &networksStatus)
 	if err != nil {
@@ -338,7 +349,9 @@ func (c *Controller)GetCurrentAddressList(pod *corev1.Pod, networks []*types.Net
 	}
 	return addresses, nil
 }
-func (c *Controller)GetCurrentPortList(pod *corev1.Pod, svc *corev1.Service) ([]corev1.EndpointPort, error){
+
+//GetCurrentPortList gets port list from svcs
+func (c *Controller) GetCurrentPortList(pod *corev1.Pod, svc *corev1.Service) ([]corev1.EndpointPort, error) {
 	ports := make([]corev1.EndpointPort, 0)
 	for i := range svc.Spec.Ports {
 		// check whether pod has the ports needed by service and add them to endpoints if so
@@ -357,7 +370,9 @@ func (c *Controller)GetCurrentPortList(pod *corev1.Pod, svc *corev1.Service) ([]
 	}
 	return ports, nil
 }
-func (c *Controller) GetResources (key string) ([]*corev1.Pod, *corev1.Service, *corev1.Endpoints, []*types.NetworkSelectionElement, error) {
+
+//GetResources gets svc, pods, eps and netwroak attacment definition
+func (c *Controller) GetResources(key string) ([]*corev1.Pod, *corev1.Service, *corev1.Endpoints, []*types.NetworkSelectionElement, error) {
 	log.Infof("key: %s\n", key)
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -387,7 +402,7 @@ func (c *Controller) GetResources (key string) ([]*corev1.Pod, *corev1.Service, 
 	// get pods matching service selector
 	pods, err := c.GetPodsOfService(svc)
 	if err != nil {
-		return nil, nil, nil,nil, errors.New("No pod exist with matching selector")
+		return nil, nil, nil, nil, errors.New("No pod exist with matching selector")
 	}
 
 	// get endpoints of the service
@@ -399,13 +414,14 @@ func (c *Controller) GetResources (key string) ([]*corev1.Pod, *corev1.Service, 
 	return pods, svc, ep, networks, nil
 }
 
+// HandleNetAttachDefDeleteEvent handles network atachment deletion
 func (c *Controller) HandleNetAttachDefDeleteEvent(obj interface{}) {
 	netAttachDef, ok := obj.(metav1.Object)
 	if ok {
 		name := netAttachDef.GetName()
 		namespace := netAttachDef.GetNamespace()
 		log.Infof("handling deletion of %s/%s", namespace, name)
-        pods, _ := c.GetAllPods()
+		pods, _ := c.GetAllPods()
 		/* check whether net-attach-def requested to be removed is still in use by any of the pods */
 		for _, pod := range pods {
 			podNetworks, err := c.GetMatchingPodNetworks(pod)
@@ -423,6 +439,7 @@ func (c *Controller) HandleNetAttachDefDeleteEvent(obj interface{}) {
 	}
 }
 
+// GetMatchingPodNetworks Get matching pod networks
 func (c *Controller) GetMatchingPodNetworks(pod *corev1.Pod) ([]*types.NetworkSelectionElement, error) {
 	netAnnotations, ok := pod.ObjectMeta.Annotations[selectionsKey]
 	if !ok {
@@ -435,6 +452,7 @@ func (c *Controller) GetMatchingPodNetworks(pod *corev1.Pod) ([]*types.NetworkSe
 	return podNetworks, nil
 }
 
+// RecoverNetworkAttachmentDefinitions recreating network attacment if svc are pending
 func (c *Controller) RecoverNetworkAttachmentDefinitions(obj interface{}, netAttachDef metav1.Object) error {
 	_, err := c.NetWatcherClientSet.K8sCniCncfIoV1().
 		NetworkAttachmentDefinitions(netAttachDef.GetNamespace()).
@@ -456,6 +474,7 @@ func (c *Controller) RecoverNetworkAttachmentDefinitions(obj interface{}, netAtt
 	return nil
 }
 
+//GetPodServices get corresponding svces based on pod selector
 func GetPodServices(sl corelisters.ServiceLister, pod *corev1.Pod) ([]*corev1.Service, error) {
 	allServices, err := sl.Services(pod.Namespace).List(labels.Everything())
 	if err != nil {
@@ -478,6 +497,7 @@ func GetPodServices(sl corelisters.ServiceLister, pod *corev1.Pod) ([]*corev1.Se
 	return services, nil
 }
 
+//GetServices Get all services belongs to namespaces
 func (c *Controller) GetServices(namespaces string, name string) (*corev1.Service, error) {
 	svc, err := c.ServiceLister.Services(namespaces).Get(name)
 	if err != nil {
@@ -486,6 +506,7 @@ func (c *Controller) GetServices(namespaces string, name string) (*corev1.Servic
 	return svc, nil
 }
 
+//GetPodsOfService filter services related to pods
 func (c *Controller) GetPodsOfService(svc *corev1.Service) ([]*corev1.Pod, error) {
 	selector := labels.Set(svc.Spec.Selector).AsSelector()
 	pods, err := c.PodsLister.List(selector)
@@ -497,6 +518,7 @@ func (c *Controller) GetPodsOfService(svc *corev1.Service) ([]*corev1.Pod, error
 	return pods, err
 }
 
+//GetEndpoints find endpoints by name
 func (c *Controller) GetEndpoints(namespaces string, name string) (*corev1.Endpoints, error) {
 	ep, err := c.EndpointsLister.Endpoints(namespaces).Get(name)
 	if err != nil {
@@ -506,7 +528,8 @@ func (c *Controller) GetEndpoints(namespaces string, name string) (*corev1.Endpo
 	return ep, nil
 }
 
-func (c *Controller) UpdateEndpoints(ep *corev1.Endpoints ) error {
+//UpdateEndpoints call update endpoint api
+func (c *Controller) UpdateEndpoints(ep *corev1.Endpoints) error {
 	_, err := c.ClientSet.CoreV1().Endpoints(ep.Namespace).Update(context.TODO(), ep, metav1.UpdateOptions{})
 	if err != nil {
 		log.Errorf("error getting service endpoints: %s", err.Error())
@@ -515,6 +538,7 @@ func (c *Controller) UpdateEndpoints(ep *corev1.Endpoints ) error {
 	return nil
 }
 
+//GetAllPods get All pods
 func (c *Controller) GetAllPods() ([]*corev1.Pod, error) {
 	pods, err := c.PodsLister.Pods("").List(labels.Everything())
 	if err != nil {
