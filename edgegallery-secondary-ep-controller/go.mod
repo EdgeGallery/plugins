@@ -23,8 +23,8 @@ require (
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
-	k8s.io/api v0.18.6
-	k8s.io/apimachinery v0.18.6
+	k8s.io/api v0.18.3
+	k8s.io/apimachinery v0.18.3
 	k8s.io/client-go v0.18.3
 	k8s.io/kubernetes v1.11.0-alpha.1.0.20180420161653-9c60fd5242c4
 )
@@ -32,6 +32,4 @@ require (
 replace (
 	github.com/containernetworking/cni v0.8.0 => github.com/containernetworking/cni v0.7.0-alpha1
 	github.com/googleapis/gnostic v0.5.1 => github.com/googleapis/gnostic v0.4.0
-	k8s.io/api => k8s.io/api v0.18.3
-	k8s.io/apimachinery => k8s.io/apimachinery v0.18.3
 )
