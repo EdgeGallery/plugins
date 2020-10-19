@@ -23,7 +23,7 @@ import (
 )
 
 func init() {
-	fileName := "/usr/k8s-net-attach.log"
+	fileName := "/usr/mep/log/k8s-net-attach.log"
 	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0640)
 	if err == nil {
 		err = file.Close()
