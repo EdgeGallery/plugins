@@ -17,12 +17,11 @@
 package main
 
 import (
+	"edgegallery-secondary-ep-controller/watcher"
 	"flag"
-	clientset "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"edgegallery-secondary-ep-controller/watcher"
 	"os"
 	"os/signal"
 )
@@ -50,15 +49,8 @@ func main() {
 		return
 	}
 
-	netAttachDefClientSet, err := clientset.NewForConfig(kubecfg)
-	if err != nil {
-		log.Fatalf("error creating net-attach-def clientset: %s", err.Error())
-		return
-	}
-
 	networkController := watcher.NewNetworkController(
-		kubeClientSet,
-		netAttachDefClientSet)
+		kubeClientSet)
 
 	stopChan := make(chan struct{})
 	signals := make(chan os.Signal, 1)

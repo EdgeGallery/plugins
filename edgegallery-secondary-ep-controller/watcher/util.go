@@ -65,19 +65,18 @@ func ParsePodNetworkSelections(podNetworks string, defaultNamespace string) ([]*
 	return networkSelections, nil
 }
 
-//ResolveNeworkAnnotation prse network annotation from svc
-func ResolveNeworkAnnotation(annotation string, defaultNamespace string) (string, string, error) {
+//ResolveNetworkAnnotation parse network annotation from svc
+func ResolveNetworkAnnotation(annotation string, defaultNamespace string) (string, string, error) {
 	var namespace, name string
 	units := strings.Split(annotation, "/")
-	switch len(units) {
-	case 1:
+	if len(units) == 1 {
 		namespace = defaultNamespace
 		name = units[0]
-	case 2:
+	} else if len(units) == 2 {
 		namespace = units[0]
 		name = units[1]
-	default:
-		err := errors.New("invalid network selection element - more than one / symbol")
+	} else {
+		err := errors.New("invalid network selection element")
 		log.Error(err)
 		return "", "", err
 	}
@@ -90,7 +89,7 @@ func ParsePodNetworkSelectionElement(selection string, defaultNamespace string) 
 	var namespace, name string
 	var networkSelectionElement *types.NetworkSelectionElement
 
-	namespace, name, err := ResolveNeworkAnnotation(selection, defaultNamespace)
+	namespace, name, err := ResolveNetworkAnnotation(selection, defaultNamespace)
 	if err != nil {
 		log.Error(err)
 		return networkSelectionElement, err
@@ -100,7 +99,7 @@ func ParsePodNetworkSelectionElement(selection string, defaultNamespace string) 
 	for _, unit := range []string{namespace, name} {
 		ok := validNameRegex.MatchString(unit)
 		if !ok && len(unit) > 0 {
-			err := errors.New("at least one of the network selection units is invalid")
+			err := errors.New("invalid network annotation")
 			log.Error(err)
 			return networkSelectionElement, err
 		}
@@ -117,7 +116,7 @@ func ParsePodNetworkSelectionElement(selection string, defaultNamespace string) 
 func IsInNetworkSelectionElementsArray(name string, networks []*types.NetworkSelectionElement) bool {
 	for i := range networks {
 		log.Infof("checking service network %s === pod network %s ", name, networks[i].Name)
-		_, netname, err := ResolveNeworkAnnotation(name, networks[i].Name)
+		_, netname, err := ResolveNetworkAnnotation(name, networks[i].Name)
 		if err != nil {
 			return false
 		}
