@@ -23,7 +23,6 @@ WORKDIR $HOME
 RUN apk update &&\
     apk add --no-cache libc-dev gcc shadow &&\
     go mod download &&\
-    go mod vendor &&\
     GOOS=linux go build -buildmode=pie -ldflags '-linkmode "external" -extldflags "-static"' -o edgegallery-secondary-ep-controller
 
 
