@@ -207,7 +207,6 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 	<-stopChan
 
 	log.Infof("shutting down network controller")
-	return
 }
 
 func (c *Controller) runWorker() {
@@ -282,7 +281,7 @@ func (c *Controller) HandleItem(key string) error {
 			}),
 		},
 	)
-	log.Infof("subsets %s", subsets)
+
 	ep.Subsets = endpoints.RepackSubsets(subsets)
 
 	// update endpoints resource
@@ -377,9 +376,8 @@ func (c *Controller) GetResources(key string) ([]*corev1.Pod, *corev1.Service, *
 		return nil, nil, nil, nil, errors.New("no service networks")
 	}
 	if len(networks) > 1 {
-		msg := fmt.Sprintf("multiple network in service spec")
-		log.Error(msg)
-		return nil, nil, nil, nil, errors.New(msg)
+		log.Error("multiple network in service spec")
+		return nil, nil, nil, nil, errors.New("multiple network in service spec")
 	}
 
 	// get pods matching service selector
@@ -434,7 +432,7 @@ func (c *Controller) GetPodsOfService(svc *corev1.Service) ([]*corev1.Pod, error
 	selector := labels.Set(svc.Spec.Selector).AsSelector()
 	pods, err := c.PodsLister.List(selector)
 	if err != nil {
-		log.Warn("No pod exist with matching service %s", selector.String())
+		log.Warnf("No pod exist with matching service %s", selector.String())
 		return nil, errors.New("No pod exist with matching selector")
 	}
 	return pods, err
