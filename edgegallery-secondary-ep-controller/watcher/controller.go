@@ -24,9 +24,7 @@ import (
 	"time"
 
 	"github.com/intel/multus-cni/types"
-	netattachdef "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	clientset "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned"
-	sharedInformers "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/informers/externalversions"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,10 +47,7 @@ type Controller struct {
 	ClientSet           kubernetes.Interface //Client to get information of k8s resources, svcs, pods etc.
 	NetWatcherClientSet clientset.Interface  //Client to get information of custom net-attachment
 
-	KubeInformar informers.SharedInformerFactory
-
-	NetAttachDefsSynced cache.InformerSynced
-	NetAttachInformer   sharedInformers.SharedInformerFactory
+	KubeInformer informers.SharedInformerFactory
 
 	PodsLister corelisters.PodLister
 	PodsSynced cache.InformerSynced
@@ -75,25 +70,18 @@ const (
 
 // NewNetworkController returns a new controller structure.
 func NewNetworkController(
-	clientSet kubernetes.Interface,
-	netWatcherClientSet clientset.Interface) *Controller {
+	clientSet kubernetes.Interface) *Controller {
 	// Records events
 	recorder := createRecorder(clientSet, controllerAgentName)
 
 	kubeInformerFactory := informers.NewSharedInformerFactory(clientSet, time.Second*5)
-	netAttachDefFactory := sharedInformers.NewSharedInformerFactory(netWatcherClientSet, time.Second*5)
-
-	netWatcherInformer := netAttachDefFactory.K8sCniCncfIo().V1().NetworkAttachmentDefinitions()
 	svcInformer := kubeInformerFactory.Core().V1().Services()
 	podInformer := kubeInformerFactory.Core().V1().Pods()
 	epInformer := kubeInformerFactory.Core().V1().Endpoints()
 
 	NetworkController := &Controller{
 		ClientSet:           clientSet,
-		KubeInformar:        kubeInformerFactory,
-		NetAttachInformer:   netAttachDefFactory,
-		NetWatcherClientSet: netWatcherClientSet,
-		NetAttachDefsSynced: netWatcherInformer.Informer().HasSynced,
+		KubeInformer:        kubeInformerFactory,
 		PodsLister:          podInformer.Lister(),
 		PodsSynced:          podInformer.Informer().HasSynced,
 		ServiceLister:       svcInformer.Lister(),
@@ -104,24 +92,20 @@ func NewNetworkController(
 		Recorder:            recorder,
 	}
 
-	netWatcherInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: NetworkController.HandleNetAttachDefDeleteEvent,
-	})
-
-	/* setup handlers for endpoints events */
+	// setup handlers for endpoints events
 	epInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    NetworkController.AddOrDelEndpointEvent,
 		UpdateFunc: NetworkController.UpdateEndPoint,
 		DeleteFunc: NetworkController.AddOrDelEndpointEvent,
 	})
 
-	/* setup handlers for services events */
+	// setup handlers for services events
 	svcInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    NetworkController.AddServiceEvent,
 		UpdateFunc: NetworkController.UpdateSvc,
 	})
 
-	/* setup handlers for pod events */
+	// setup handlers for pod events
 	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: NetworkController.UpdatePod,
 	})
@@ -133,7 +117,7 @@ func NewNetworkController(
 func (c *Controller) AddOrDelEndpointEvent(obj interface{}) {
 	ep := obj.(*corev1.Endpoints)
 
-	// get service associated with endpoints instance
+	// find services associated with endpoints
 	svc, err := c.GetServices(ep.GetNamespace(), ep.GetName())
 	if err != nil {
 		return
@@ -213,10 +197,8 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 	defer runtime.HandleCrash()
 	defer c.Workqueue.ShutDown()
 
-	c.KubeInformar.Start(stopChan)
-	c.NetAttachInformer.Start(stopChan)
-
-	if ok := cache.WaitForCacheSync(stopChan, c.NetAttachDefsSynced, c.EndpointsSynced, c.ServicesSynced, c.PodsSynced); !ok {
+	c.KubeInformer.Start(stopChan)
+	if ok := cache.WaitForCacheSync(stopChan, c.EndpointsSynced, c.ServicesSynced, c.PodsSynced); !ok {
 		log.Fatalf("failed waiting for caches to sync")
 	}
 
@@ -225,7 +207,6 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 	<-stopChan
 
 	log.Infof("shutting down network controller")
-	return
 }
 
 func (c *Controller) runWorker() {
@@ -300,7 +281,7 @@ func (c *Controller) HandleItem(key string) error {
 			}),
 		},
 	)
-	log.Infof("subsets %s", subsets)
+
 	ep.Subsets = endpoints.RepackSubsets(subsets)
 
 	// update endpoints resource
@@ -319,7 +300,7 @@ func (c *Controller) GetCurrentAddressList(pod *corev1.Pod, networks []*types.Ne
 	networksStatus := make([]types.NetworkStatus, 0)
 	err := json.Unmarshal([]byte(pod.Annotations[statusesKey]), &networksStatus)
 	if err != nil {
-		log.Warningf("error reading pod networks status: %s", err)
+		log.Error("Invalid pod networks status")
 		return nil, err
 	}
 	addresses := make([]corev1.EndpointAddress, 0)
@@ -371,7 +352,7 @@ func (c *Controller) GetCurrentPortList(pod *corev1.Pod, svc *corev1.Service) ([
 	return ports, nil
 }
 
-//GetResources gets svc, pods, eps and netwroak attacment definition
+//GetResources gets svc, pods, eps and network attachment definition
 func (c *Controller) GetResources(key string) ([]*corev1.Pod, *corev1.Service, *corev1.Endpoints, []*types.NetworkSelectionElement, error) {
 	log.Infof("key: %s\n", key)
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
@@ -386,6 +367,7 @@ func (c *Controller) GetResources(key string) ([]*corev1.Pod, *corev1.Service, *
 	}
 	annotations := GetNetworkAnnotations(svc)
 	if len(annotations) == 0 {
+		log.Infof("No network annotation found, so drop this event")
 		return nil, nil, nil, nil, errors.New("no network annotations")
 	}
 	log.Infof("service network annotation found: %v", annotations)
@@ -394,9 +376,8 @@ func (c *Controller) GetResources(key string) ([]*corev1.Pod, *corev1.Service, *
 		return nil, nil, nil, nil, errors.New("no service networks")
 	}
 	if len(networks) > 1 {
-		msg := fmt.Sprintf("multiple network in service spec")
-		log.Warningf(msg)
-		return nil, nil, nil, nil, errors.New(msg)
+		log.Error("multiple network in service spec")
+		return nil, nil, nil, nil, errors.New("multiple network in service spec")
 	}
 
 	// get pods matching service selector
@@ -405,73 +386,13 @@ func (c *Controller) GetResources(key string) ([]*corev1.Pod, *corev1.Service, *
 		return nil, nil, nil, nil, errors.New("No pod exist with matching selector")
 	}
 
-	// get endpoints of the service
+	// find endpoints of the services
 	ep, err := c.GetEndpoints(ns, name)
 	if err != nil {
 		return nil, nil, nil, networks, errors.New("no service endpoints found")
 	}
 
 	return pods, svc, ep, networks, nil
-}
-
-// HandleNetAttachDefDeleteEvent handles network atachment deletion
-func (c *Controller) HandleNetAttachDefDeleteEvent(obj interface{}) {
-	netAttachDef, ok := obj.(metav1.Object)
-	if ok {
-		name := netAttachDef.GetName()
-		namespace := netAttachDef.GetNamespace()
-		log.Infof("handling deletion of %s/%s", namespace, name)
-		pods, _ := c.GetAllPods()
-		/* check whether net-attach-def requested to be removed is still in use by any of the pods */
-		for _, pod := range pods {
-			podNetworks, err := c.GetMatchingPodNetworks(pod)
-			if err != nil {
-				continue
-			}
-			for _, net := range podNetworks {
-				if net.Namespace == namespace && net.Name == name {
-					log.Infof("pod %s uses net-attach-def %s/%s which needs to be recreated\n", pod.ObjectMeta.Name, namespace, name)
-					/* check whether the object somehow still exists */
-					c.RecoverNetworkAttachmentDefinitions(obj, netAttachDef)
-				}
-			}
-		}
-	}
-}
-
-// GetMatchingPodNetworks Get matching pod networks
-func (c *Controller) GetMatchingPodNetworks(pod *corev1.Pod) ([]*types.NetworkSelectionElement, error) {
-	netAnnotations, ok := pod.ObjectMeta.Annotations[selectionsKey]
-	if !ok {
-		return nil, errors.New("No network annotation found")
-	}
-	podNetworks, err := ParsePodNetworkSelections(netAnnotations, pod.ObjectMeta.Namespace)
-	if err != nil {
-		return nil, errors.New("No network annotation found")
-	}
-	return podNetworks, nil
-}
-
-// RecoverNetworkAttachmentDefinitions recreating network attacment if svc are pending
-func (c *Controller) RecoverNetworkAttachmentDefinitions(obj interface{}, netAttachDef metav1.Object) error {
-	_, err := c.NetWatcherClientSet.K8sCniCncfIoV1().
-		NetworkAttachmentDefinitions(netAttachDef.GetNamespace()).
-		Get(context.TODO(), netAttachDef.GetName(), metav1.GetOptions{})
-	if err != nil {
-		/* recover deleted object */
-		recovered := obj.(*netattachdef.NetworkAttachmentDefinition).DeepCopy()
-		recovered.ObjectMeta.ResourceVersion = "" // ResourceVersion field needs to be cleared before recreating the object
-		_, err = c.NetWatcherClientSet.
-			K8sCniCncfIoV1().
-			NetworkAttachmentDefinitions(netAttachDef.GetNamespace()).
-			Create(context.TODO(), recovered, metav1.CreateOptions{})
-		if err != nil {
-			log.Errorf("error recreating recovered object: %s", err.Error())
-			return errors.New("error recreating recovered object")
-		}
-		log.Infof("net-attach-def recovered: %v", recovered)
-	}
-	return nil
 }
 
 //GetPodServices get corresponding svces based on pod selector
@@ -511,8 +432,7 @@ func (c *Controller) GetPodsOfService(svc *corev1.Service) ([]*corev1.Pod, error
 	selector := labels.Set(svc.Spec.Selector).AsSelector()
 	pods, err := c.PodsLister.List(selector)
 	if err != nil {
-		// no selector or no pods running
-		log.Warn("error listing pods matching service selector: %s", selector.String())
+		log.Warnf("No pod exist with matching service %s", selector.String())
 		return nil, errors.New("No pod exist with matching selector")
 	}
 	return pods, err
