@@ -19,13 +19,13 @@ import (
 
 const (
 	CONTROLLER_INIT string = "Error in controller init"
-	ENDPOINTS              = "Endpoints"
-	DEFAULT                = "default"
-	WRK_QUEUE_EMPTY        = "Workeue should be empty"
-	SERVICE                = "Service"
-	V1                     = "v1"
-	IP1                    = "100.1.1.1"
-	HTTP_PORT              = "httpPort"
+	ENDPOINTS       string = "Endpoints"
+	DEFAULT         string = "default"
+	WRK_QUEUE_EMPTY string = "Workeue should be empty"
+	SERVICE         string = "Service"
+	V1              string = "v1"
+	IP1             string = "100.1.1.1"
+	HTTP_PORT       string = "httpPort"
 )
 
 func TestInitNetworkController(t *testing.T) {
