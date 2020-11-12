@@ -8,8 +8,6 @@ import (
 
 	"github.com/agiledragon/gomonkey"
 	"github.com/intel/multus-cni/types"
-	netattachv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	netattachfake "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/fake"
 	"github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -21,22 +19,20 @@ import (
 
 const (
 	CONTROLLER_INIT string = "Error in controller init"
-	ENDPOINTS              = "Endpoints"
-	DEFAULT                = "default"
-	WRK_QUEUE_EMPTY        = "Workeue should be empty"
-	SERVICE                = "Service"
-	V1                     = "v1"
-	IP1                    = "100.1.1.1"
-	HTTP_PORT              = "httpPort"
+	ENDPOINTS       string = "Endpoints"
+	DEFAULT         string = "default"
+	WRK_QUEUE_EMPTY string = "Workeue should be empty"
+	SERVICE         string = "Service"
+	V1              string = "v1"
+	IP1             string = "100.1.1.1"
+	HTTP_PORT       string = "httpPort"
 )
 
 func TestInitNetworkController(t *testing.T) {
 	convey.Convey("Testing Init network controller", t, func() {
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 	})
 }
@@ -79,11 +75,9 @@ func TestAddOrDelEndpointEvent(t *testing.T) {
 				Name:      "foo",
 			},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		var n *watcher.Controller
 		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
@@ -126,11 +120,9 @@ func TestAddOrDelEndpointEventServiceNotfound(t *testing.T) {
 				},
 			},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		var n *watcher.Controller
 		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
@@ -208,11 +200,9 @@ func TestUpdateEndPointEvent(t *testing.T) {
 				Name:      "foo",
 			},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		var n *watcher.Controller
 		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n), "GetServices", func(*watcher.Controller, string, string) (*corev1.Service, error) {
@@ -239,11 +229,9 @@ func TestAddServiceEventSuccess(t *testing.T) {
 				Namespace: DEFAULT,
 			},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		networkController.AddServiceEvent(fakeService)
 		obj, shouldQuit := networkController.Workqueue.Get()
@@ -261,11 +249,9 @@ func TestAddServiceEventFailure(t *testing.T) {
 			},
 			ObjectMeta: metav1.ObjectMeta{},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 
 		patch1 := gomonkey.ApplyFunc(cache.MetaNamespaceKeyFunc, func(interface{}) (string, error) {
@@ -298,11 +284,9 @@ func TestUpdateSvcEvent(t *testing.T) {
 				ResourceVersion: "1",
 			},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 
 		patch1 := gomonkey.ApplyFunc(cache.MetaNamespaceKeyFunc, func(interface{}) (string, error) {
@@ -347,11 +331,9 @@ func TestUpdatePodEvent(t *testing.T) {
 				},
 			},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 
 		patch1 := gomonkey.ApplyFunc(cache.MetaNamespaceKeyFunc, func(interface{}) (string, error) {
@@ -396,11 +378,9 @@ func TestUpdatePodEvent(t *testing.T) {
 
 func TestHandleItemError(t *testing.T) {
 	convey.Convey("Testing Handle workeue item", t, func() {
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 
 		patch1 := gomonkey.ApplyFunc(cache.MetaNamespaceKeyFunc, func(interface{}) (string, error) {
@@ -461,11 +441,9 @@ func TestHandleItemError(t *testing.T) {
 
 func TestHandleItemError2(t *testing.T) {
 	convey.Convey("Testing Handle workeue item", t, func() {
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 
 		patch1 := gomonkey.ApplyFunc(cache.MetaNamespaceKeyFunc, func(interface{}) (string, error) {
@@ -535,11 +513,9 @@ func TestHandleItemError2(t *testing.T) {
 
 func TestHandleItemWithServiceExist(t *testing.T) {
 	convey.Convey("Testing Handle service items", t, func() {
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 
 		//Service exist with a network
@@ -644,56 +620,6 @@ func TestHandleItemWithServiceExist(t *testing.T) {
 	})
 }
 
-func TestHandleNetAttachDefDeleteEvent(t *testing.T) {
-	convey.Convey("Testing Handle workeue item", t, func() {
-		clientSet := netattachfake.NewSimpleClientset()
-		k8sclientSet := k8sfake.NewSimpleClientset()
-		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
-		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
-
-		fakeNetAttachment := &netattachv1.NetworkAttachmentDefinition{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "NetworkAttachmentDefinition",
-				APIVersion: V1,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				ResourceVersion: "1",
-				Namespace:       DEFAULT,
-				Name:            "macvlan-conf1",
-			},
-		}
-		fakePod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "fakePod1",
-				Namespace: DEFAULT,
-				Annotations: map[string]string{
-					"k8s.v1.cni.cncf.io/networks":        "macvlan-conf1",
-					"k8s.v1.cni.cncf.io/networks-status": "[{\n        \"name\": \"openshift-sdn\",\n        \"ips\": [\n            \"10.131.0.10\"\n        ],\n        \"default\": true,\n        \"dns\": {}\n}]",
-				},
-			},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name:  "fakeContainer",
-						Image: "fakeImage",
-					},
-				},
-			},
-		}
-		var n1 *watcher.Controller
-		var pods []*corev1.Pod
-		patch1 := gomonkey.ApplyMethod(reflect.TypeOf(n1), "GetAllPods", func(*watcher.Controller) ([]*corev1.Pod, error) {
-			pods := append(pods, fakePod)
-			return pods, nil
-		})
-		networkController.HandleNetAttachDefDeleteEvent(fakeNetAttachment)
-		patch1.Reset()
-
-	})
-}
-
 func TestProcessNextWorkItemError(t *testing.T) {
 	convey.Convey("Testing workeue item", t, func() {
 		fakeService := &corev1.Service{
@@ -706,11 +632,9 @@ func TestProcessNextWorkItemError(t *testing.T) {
 				Namespace: DEFAULT,
 			},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		networkController.AddServiceEvent(fakeService)
 		shouldContinue := networkController.ProcessNextWorkItem()
@@ -734,11 +658,9 @@ func TestProcessNextWorkItemSuccess(t *testing.T) {
 				Namespace: DEFAULT,
 			},
 		}
-		clientSet := netattachfake.NewSimpleClientset()
 		k8sclientSet := k8sfake.NewSimpleClientset()
 		networkController := watcher.NewNetworkController(
-			k8sclientSet,
-			clientSet)
+			k8sclientSet)
 		assert.NotEqual(t, nil, networkController.ServiceLister, CONTROLLER_INIT)
 		networkController.AddServiceEvent(fakeService)
 		var n1 *watcher.Controller
