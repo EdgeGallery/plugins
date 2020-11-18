@@ -13,19 +13,19 @@ require (
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/intel/multus-cni v0.0.0-20180818113950-86af6ab69fe2
 	github.com/json-iterator/go v1.1.10 // indirect
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v0.0.0-20200626054723-37f83d1996bc
+        github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
-	k8s.io/api v0.18.3
-	k8s.io/apimachinery v0.18.3
-	k8s.io/client-go v0.18.3
+	k8s.io/api v0.18.4
+	k8s.io/apimachinery v0.18.4
+	k8s.io/client-go v0.18.4
 	k8s.io/kubernetes v1.11.0-alpha.1.0.20180420161653-9c60fd5242c4
 )
 
