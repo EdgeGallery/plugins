@@ -26,6 +26,7 @@ RUN apk update &&\
     go mod download &&\
     GOOS=linux go build -buildmode=pie -ldflags '-linkmode "external" -extldflags "-static"' -o edgegallery-secondary-ep-controller
 
+RUN chmod 550 $HOME/edgegallery-secondary-ep-controller
 
 FROM alpine:latest
 RUN sed -i "s|umask 022|umask 027|g" /etc/profile
@@ -45,17 +46,15 @@ RUN apk update &&\
     groupadd -r -g $GID $GROUP_NAME &&\
     useradd -r -u $UID -g $GID -d $HOME -s /sbin/nologin -c "Docker image user" $USER_NAME
 
-
-# Copy in the application exe.
-
-COPY --from=builder /usr/src/edgegallery-secondary-ep-controller/ $HOME/bin/
-
 WORKDIR $HOME
 #RUN chmod 750 /usr/bin/edgegallery-secondary-ep-controller
 RUN chmod 750 $HOME &&\
     chmod 550 -R $HOME/bin/ &&\
     mkdir -p -m 750 $HOME/log &&\
     chown -hR $USER_NAME:$GROUP_NAME $HOME
+
+# Copy in the application exe.
+COPY --from=builder --chown=$USER_NAME:$GROUP_NAME /usr/src/edgegallery-secondary-ep-controller/ $HOME/bin/
 
 USER $USER_NAME
 
