@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM swr.cn-north-4.myhuaweicloud.com/eg-common/golang:alpine as builder
-ENV GOPROXY https://proxy.golang.org
-ENV GO111MODULE on
+FROM swr.cn-north-4.myhuaweicloud.com/eg-common/golang:1.14.2-alpine3.11 as builder
 ENV HOME=/usr/src
 
 RUN mkdir -p $HOME
