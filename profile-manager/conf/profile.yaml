@@ -1,0 +1,27 @@
+profile:
+  - fledge:
+      south:
+        - type: mqtt-readings
+          topic: Room1/Condition
+          installPlugin: true
+  - kuiper:
+      stream:
+        - sql: 'create stream events () WITH ( datasource = "fledge", FORMAT = "json")'
+      rules:
+        - id: rule1
+          sql: "SELECT readings->device AS asset, `timestamp`, round(readings->temp) AS temperature FROM events"
+          actions:
+            - type: mqtt
+  - tdengine:
+      south:
+        - dbName: iotdb
+          sTable: meters
+          topic: kuiper
+          tableNameJqPath: .asset
+          dataMapping:
+            - field: ts
+              jqPath: .timestamp
+              dataType: TIMESTAMP
+            - field: temperature
+              jqPath: .temperature
+              dataType: TINYINT
