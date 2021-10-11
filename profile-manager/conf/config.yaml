@@ -1,0 +1,26 @@
+config:
+  fledge:
+    hostUrl: http://localhost:8081
+    north:
+      default:
+        type: mqtt
+        topic: fledge
+    readiness:
+      httpGet: /fledge/ping
+  kuiper:
+    hostUrl: http://localhost:9081
+    rules:
+      default:
+        type: mqtt
+        topic: kuiper
+
+  tdengine:
+    hostUrl: http://localhost:9085
+    south:
+      default:
+        dbName: iotdb
+        sTable: meters
+
+broker:
+  host: mqtt
+  port: 1883
