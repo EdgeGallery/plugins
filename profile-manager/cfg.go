@@ -50,7 +50,7 @@ func (c *Config) readConfig() error {
 	configFilePath := filepath.FromSlash(_const.ConfigPath)
 	configData, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		log.Error("Reading IoT configuration file error.", nil)
+		log.Error("Reading profile manager file error.", nil)
 		return err
 	}
 
