@@ -17,6 +17,7 @@ RUN git clone https://github.com/fledge-iot/fledge.git && \
 #     python3 -m pip install -r python/requirements-mqtt-readings.txt && \
 #     sed -i 's/localhost/mqtt-broker/g' /fledge-south-mqtt/mqtt-pub/__main__.py
 # RUN apt-get -y install wget apt-utils gnupg2 software-properties-common sudo 
+RUN apt-get autoclean && apt-get autoremove -y && apt-get update
 RUN     wget -q -O - http://archives.fledge-iot.org/KEY.gpg | apt-key add - && \
     add-apt-repository "deb http://archives.fledge-iot.org/latest/ubuntu1804/x86_64/ / "
 RUN apt-get -y update && \

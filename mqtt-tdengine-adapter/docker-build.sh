@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright 2020 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# start fledge
-/usr/local/fledge/bin/fledge start
-/usr/local/fledge/bin/fledge status
-
-while :; do
-  sleep 300
-done
+rm -rf mqtt-tdengine-adapter
+go build .
+MEP_VERSION=latest
+docker build --no-cache -t edgegallery/mqtt-tdengine-adapter:${MEP_VERSION} .
