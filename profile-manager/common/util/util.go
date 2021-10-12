@@ -38,7 +38,7 @@ func SendConfigToNode(hostUrl string, data string, method string) ([]byte, error
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Error("sending error.", err)
+		log.Error("Send error: ", err)
 		return nil, err
 	}
 
@@ -46,11 +46,12 @@ func SendConfigToNode(hostUrl string, data string, method string) ([]byte, error
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Error("IoT config response error.", err)
+		log.Error("profile manager response error.", err)
 		return nil, err
 	}
-
+	fmt.Print("\n-------------------------------------------------------\n")
 	fmt.Println(string(body))
+	fmt.Print("-------------------------------------------------------\n\n")
 	return body, nil
 }
 
@@ -62,6 +63,21 @@ func GetValuesByKey(cfg *jsone.O, key string) string {
 		}
 	}
 	return result
+}
+func GetDefaultByKey(cfg *jsone.O, key string) *jsone.O {
+	for _, k := range cfg.Keys() {
+		if k == key {
+			nodeObj, err := cfg.GetObject(key)
+			if err != nil {
+				return nil
+			}
+			if nodeObj.Has("default") {
+				node, _ := nodeObj.GetObject("default")
+				return &node
+			}
+		}
+	}
+	return nil
 }
 
 func GetBrokerHostAndPort(config *jsone.O) (string, int64, error) {

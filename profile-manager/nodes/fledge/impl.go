@@ -44,10 +44,10 @@ func (f *FlEdge) ReadinessCheck(node *jsone.O) error {
 		count++
 		_, err := util.SendConfigToNode(hostUrls+httpGet, "", "GET")
 		if err == nil {
-			log.Info("Server is up, readiness check is completed.")
+			log.Info("Peer is up, readiness check is completed.")
 			break
 		}
-		log.Infof("waiting for server status up(%v seconds)", count)
+		log.Infof("Waiting for peer status up(%v seconds)", count)
 		if count == _const.MaxNumberRetry {
 			log.Info("Server is not responding for %v seconds, readiness check stopped.", count)
 			err = fmt.Errorf("server is not reachable")
@@ -93,7 +93,7 @@ func (f *FlEdge) ApplyConfig(prfCfgType string, prfCfg *jsone.A, cfgObj *jsone.O
 		}
 	}
 	//3.add north service : defaut
-	err := f.addNorthService("north", topic, _type, cfgObj, config)
+	err := f.addNorthService("north", "", "", cfgObj, config)
 	if err != nil {
 		log.Error("North service add failed.", err)
 		return err
@@ -147,6 +147,15 @@ func (f *FlEdge) addNorthService(srvType string, topic string, _type string, cfg
 	if err != nil {
 		log.Error(err, "Getting broker host or port failed.")
 		return err
+	}
+	north := util.GetDefaultByKey(cfg, "north")
+	if north != nil {
+		if topic == "" {
+			topic = util.GetValuesByKey(north, "topic")
+		}
+		if _type == "" {
+			_type = util.GetValuesByKey(north, "type")
+		}
 	}
 
 	data := fmt.Sprintf(_const.NorthService, "out", srvType, host, port, topic)

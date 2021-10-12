@@ -33,11 +33,5 @@ func TestLoadIoTConfig(t *testing.T) {
 		}()
 		//out , _ := LoadIoTProfile()
 		main()
-
-		//assert.Equal(t, out.Config.Fledge.HostURL,  "127.0.0.10/fledge")
-		//assert.Equal(t, out.Profile[2].Tdengine.STable,  "meters")
-		//byte , _ := json.Marshal(out)
-		//fmt.Println("Config is " + string(byte))
-		//fmt.Println("Config is ", len(out.Profile))
 	})
 }

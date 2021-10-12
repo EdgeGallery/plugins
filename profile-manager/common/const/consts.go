@@ -48,4 +48,4 @@ const TdEngineFmt = "{\"brokerAddr\": {\"host\": \"%s\",\"port\": %d},\"dbAddr\"
 	"\"port\": 6030},\"dbName\": \"_dbName_\",\"store\": [{\"topic\": \"_topic_\",\"sTable\": \"_sTable_\"," +
 	"\"tableNameJqPath\": \"_tableNameJqPath_\",\"dataMapping\": _dataMapping_}]}"
 const TdEngine = "/api/v1/resource"
-const Delay = 1 //TODO 10
+const Delay = 10
