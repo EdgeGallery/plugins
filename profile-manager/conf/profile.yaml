@@ -4,6 +4,10 @@ profile:
         - type: mqtt-readings
           topic: Room1/Condition
           installPlugin: true
+        - type: opcua
+          srvUrl: opc.tcp://opcuasrv:4840/freeopcua/server/
+          nodeId: 'ns=5;s=sensor0'
+          installPlugin: true
   - kuiper:
       stream:
         - sql: 'create stream events () WITH ( datasource = "fledge", FORMAT = "json")'

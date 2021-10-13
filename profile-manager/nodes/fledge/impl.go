@@ -59,39 +59,88 @@ func (f *FlEdge) ReadinessCheck(node *jsone.O) error {
 	return err
 }
 
-func (f *FlEdge) ApplyConfig(prfCfgType string, prfCfg *jsone.A, cfgObj *jsone.O, config *jsone.O) error {
+func GetTypeByKey(cfg jsone.O) string {
+	var result string = ""
+	for _, k := range cfg.Keys() {
+		if k == "type" {
+			result, _ = cfg.GetString(k)
+		}
+	}
+	return result
+}
+
+func (f *FlEdge) ApplyConfig(prfCfgType string, prfCfg *jsone.A,  cfgObj *jsone.O, config *jsone.O) error {
 	install := false
 	topic := ""
+	srvUrl := ""
+	nodeId := ""
 	_type := ""
 	// Get the values
 	for _, val := range *prfCfg {
-		for _, key := range (val.(jsone.O)).Keys() {
-			switch key {
-			case "installPlugin":
-				install, _ = (val.(jsone.O)).GetBoolean(key)
-			case "topic":
-				topic, _ = (val.(jsone.O)).GetString(key)
-			case "type":
-				_type, _ = (val.(jsone.O)).GetString(key)
+		if GetTypeByKey(val.(jsone.O)) == "mqtt-readings" {
+			for _, key := range (val.(jsone.O)).Keys() {
+				switch key {
+				case "installPlugin":
+					install, _ = (val.(jsone.O)).GetBoolean(key)
+				case "topic":
+					topic, _ = (val.(jsone.O)).GetString(key)
+				case "type":
+					_type, _ = (val.(jsone.O)).GetString(key)
+				}
+			}
+
+			//1.install plugin
+			if install {
+				err := f.installPlugin(_type, cfgObj)
+				if err != nil {
+					log.Error("Install plugin failed.", err)
+					return err
+				}
+			}
+
+			//2.add south service
+			if prfCfgType == "south" {
+				err := f.addSouthMQTTService(prfCfgType, topic, _type, cfgObj, config)
+				if err != nil {
+					log.Error("South service add failed.", err)
+					return err
+				}
+			}
+		}
+		if GetTypeByKey(val.(jsone.O)) == "opcua" {
+			for _, key := range (val.(jsone.O)).Keys() {
+				switch key {
+				case "installPlugin":
+					install, _ = (val.(jsone.O)).GetBoolean(key)
+				case "srvUrl":
+					srvUrl, _ = (val.(jsone.O)).GetString(key)
+				case "type":
+					_type, _ = (val.(jsone.O)).GetString(key)
+				case "nodeId":
+					nodeId, _ = (val.(jsone.O)).GetString(key)
+				}
+			}
+
+			//1.install plugin
+			if install {
+				err := f.installPlugin(_type, cfgObj)
+				if err != nil {
+					log.Error("Install plugin failed.", err)
+					return err
+				}
+			}
+
+			//2.add south service
+			if prfCfgType == "south" {
+				err := f.addSouthOPCUAService(prfCfgType, srvUrl, nodeId, _type, cfgObj, config)
+				if err != nil {
+					log.Error("South service add failed.", err)
+					return err
+				}
 			}
 		}
 	}
-	//1.install plugin
-	if install {
-		err := f.installPlugin(_type, cfgObj)
-		if err != nil {
-			log.Error("Install plugin failed.", err)
-			return err
-		}
-	}
-	//2.add south service
-	if prfCfgType == "south" {
-		err := f.addSouthService(prfCfgType, topic, _type, cfgObj, config)
-		if err != nil {
-			log.Error("South service add failed.", err)
-			return err
-		}
-	}
+
 	//3.add north service : defaut
 	err := f.addNorthService("north", "", "", cfgObj, config)
 	if err != nil {
@@ -121,8 +170,8 @@ func (f *FlEdge) installPlugin(name string, cfg *jsone.O) error {
 	return nil
 }
 
-func (f *FlEdge) addSouthService(srvType string, topic string, _type string, cfg *jsone.O, config *jsone.O) error {
-	host, port, err := util.GetBrokerHostAndPort(config)
+func (f *FlEdge) addSouthMQTTService(srvType string, topic string, _type string, cfg *jsone.O, config *jsone.O) error {
+    host, port, err := util.GetBrokerHostAndPort(config)
 	if err != nil {
 		log.Error(err, "Getting broker host or port failed.")
 		return err
@@ -136,8 +185,22 @@ func (f *FlEdge) addSouthService(srvType string, topic string, _type string, cfg
 		return err
 	}
 
-	log.Info("Subscribe south service success")
-	time.Sleep(time.Second * _const.Delay) //sleep 10 seconds
+	log.Info("Subscribe MQTT south service success")
+	return nil
+}
+
+func (f *FlEdge) addSouthOPCUAService(srvType string, srvUrl string, nodeId string, _type string, cfg *jsone.O, config *jsone.O) error {
+
+	url := util.GetValuesByKey(cfg, "hostUrl") + _const.SubscribePath
+	data := fmt.Sprintf(_const.SubscribeOPCUAService, "opcua-srv", srvType, _type, srvUrl, nodeId)
+	log.Infof("data : %s", data)
+	_, err := util.SendConfigToNode(url, data, "POST")
+	if err != nil {
+		log.Error(err, "Adding south service failed.")
+		return err
+	}
+
+	log.Info("Subscribe opcua south service success")
 	return nil
 }
 
