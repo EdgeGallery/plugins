@@ -35,6 +35,8 @@ const PluginPath = "/fledge/plugins"
 //Fledge constants
 const SubscribeService = "{\"name\": \"%s\", \"type\": \"%s\", \"plugin\" :\"%s\",\"enabled\":true,\"config\": {\"brokerHost\": {\"value\": \"%s\"},\"brokerPort\": {\"value\": \"%d\"},\"topic\": {\"value\": \"%s\"},\"assetName\":{\"value\":\"%s\"}}}"
 const SubscribeOPCUAService = "{\"name\": \"%s\", \"type\": \"%s\", \"plugin\" :\"%s\",\"enabled\":true,\"config\": {\"asset\":{\"value\":\"opcua00\"},\"url\":{\"value\":\"%s\"},\"subscription\": {\"value\":{\"subscriptions\": [\"%s\"]}}}}"
+const SubscribeModbusService = "{\"name\": \"%s\", \"type\": \"%s\", \"plugin\" :\"%s\",\"enabled\":true,\"config\": " +
+	"{\"protocol\":{\"value\":\"TCP\"},\"address\":{\"value\": \"%s\"}, \"port\":{\"value\": \"%s\"},\"map\":{\"value\":{\"values\":[{\"name\":\"%s\",\"slave\":%d,\"assetName\":\"%s\",\"register\":%d,\"scale\":%f,\"offset\":%d}]}}}}"
 
 const SubscribePath = "/fledge/service"
 const NorthService = "{\"name\":\"%s\", \"plugin\":\"mqtt_north\", \"type\":\"%s\", \"enabled\":true, \"config\": {\"brokerHost\": {\"value\": \"%s\"},\"brokerPort\": {\"value\": \"%d\"},\"topic\": {\"value\": \"%s\"}}}"
@@ -50,4 +52,4 @@ const TdEngineFmt = "{\"brokerAddr\": {\"host\": \"%s\",\"port\": %d},\"dbAddr\"
 	"\"port\": 6030},\"dbName\": \"_dbName_\",\"store\": [{\"topic\": \"_topic_\",\"sTable\": \"_sTable_\"," +
 	"\"tableNameJqPath\": \"_tableNameJqPath_\",\"dataMapping\": _dataMapping_}]}"
 const TdEngine = "/api/v1/resource"
-const Delay = 20
+const Delay = 30

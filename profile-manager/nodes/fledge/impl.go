@@ -30,6 +30,17 @@ type FlEdge struct {
 	nodeif.Node
 }
 
+type ModBusInfo struct {
+	devIP string
+	devPort string
+	reading string
+	slaveAdd int64
+	assetName string
+	register int64
+	scale float64
+	offset int64
+}
+
 func (f *FlEdge) ReadinessCheck(node *jsone.O) error {
 
 	hostUrls, err := node.GetString("hostUrl")
@@ -139,6 +150,54 @@ func (f *FlEdge) ApplyConfig(prfCfgType string, prfCfg *jsone.A,  cfgObj *jsone.
 				}
 			}
 		}
+		if GetTypeByKey(val.(jsone.O)) == "modbus" {
+			var modbus ModBusInfo
+			fmt.Println(val.(jsone.O))
+			for _, key := range (val.(jsone.O)).Keys() {
+				switch key {
+				case "installPlugin":
+					install, _ = (val.(jsone.O)).GetBoolean(key)
+				case "devIP":
+					modbus.devIP, _ = (val.(jsone.O)).GetString(key)
+				case "devPort":
+					modbus.devPort, _ = (val.(jsone.O)).GetString(key)
+				case "reading":
+					modbus.reading, _ = (val.(jsone.O)).GetString(key)
+				case "slaveAdd":
+					modbus.slaveAdd, _ = (val.(jsone.O)).GetInt64(key)
+				case "assetName":
+					modbus.assetName, _ = (val.(jsone.O)).GetString(key)
+				case "register":
+					modbus.register, _ = (val.(jsone.O)).GetInt64(key)
+				case "scale":
+					modbus.scale, _ = (val.(jsone.O)).GetFloat64(key)
+				case "offset":
+					modbus.offset, _ = (val.(jsone.O)).GetInt64(key)
+				case "type":
+					_type, _ = (val.(jsone.O)).GetString(key)
+				}
+
+			}
+
+			//1.install plugin
+			if install {
+				err := f.installPlugin(_type, cfgObj)
+				if err != nil {
+					log.Error("Install plugin failed.", err)
+					return err
+				}
+			}
+
+			//2.add south service
+			if prfCfgType == "south" {
+				err := f.addSouthModbusService(prfCfgType, modbus, cfgObj)
+				if err != nil {
+					log.Error("South service add failed.", err)
+					return err
+				}
+			}
+		}
+
 	}
 
 	//3.add north service : defaut
@@ -201,6 +260,23 @@ func (f *FlEdge) addSouthOPCUAService(srvType string, srvUrl string, nodeId stri
 	}
 
 	log.Info("Subscribe opcua south service success")
+	return nil
+}
+
+func (f *FlEdge) addSouthModbusService(srvType string, modbus ModBusInfo, cfg *jsone.O) error {
+
+	url := util.GetValuesByKey(cfg, "hostUrl") + _const.SubscribePath
+	log.Infof("data : %v", modbus)
+
+	data := fmt.Sprintf(_const.SubscribeModbusService, "modbus-srvc", srvType, "ModbusC", modbus.devIP, modbus.devPort, modbus.reading, modbus.slaveAdd, modbus.assetName, modbus.register, modbus.scale, modbus.offset)
+	log.Infof("data : %s", data)
+	_, err := util.SendConfigToNode(url, data, "POST")
+	if err != nil {
+		log.Error(err, "Adding south service failed.")
+		return err
+	}
+
+	log.Info("Subscribe modbus south service success")
 	return nil
 }
 

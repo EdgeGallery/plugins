@@ -8,6 +8,16 @@ profile:
           srvUrl: opc.tcp://opcuasrv:4840/freeopcua/server/
           nodeId: 'ns=5;s=sensor0'
           installPlugin: true
+        - type: modbus
+          devIP: 0.0.0.0
+          reading: temp
+          devPort: "502"
+          slaveAdd: 1
+          assetName: ModbusDev
+          register: 1
+          scale: 0.2
+          offset: 1
+          installPlugin: true
   - kuiper:
       stream:
         - sql: 'create stream events () WITH ( datasource = "fledge", FORMAT = "json")'
