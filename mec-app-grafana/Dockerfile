@@ -1,4 +1,4 @@
-FROM grafana/grafana:8.1.5-ubuntu
+FROM swr.cn-north-4.myhuaweicloud.com/eg-common/grafana/grafana:8.1.5-ubuntu
 #RUN apk update && apk add libc6-compat
 USER root
 #COPY grafanaplugin/ grafanaplugin/

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu
+FROM swr.cn-north-4.myhuaweicloud.com/eg-common/ubuntu:20.04
 #RUN apk update && apk add libc6-compat
 WORKDIR /
 RUN mkdir conf

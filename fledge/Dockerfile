@@ -1,4 +1,4 @@
-FROM jrei/systemd-ubuntu:18.04
+FROM swr.cn-north-4.myhuaweicloud.com/eg-common/jrei/systemd-ubuntu:18.04
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get -y upgrade && \
     apt-get -y update && \
