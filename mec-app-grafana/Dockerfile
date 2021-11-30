@@ -1,12 +1,6 @@
-FROM swr.cn-north-4.myhuaweicloud.com/eg-common/grafana/grafana:8.1.5-ubuntu
-#RUN apk update && apk add libc6-compat
+FROM swr.cn-north-4.myhuaweicloud.com/eg-common/grafana/grafana:6.7.6
 USER root
-#COPY grafanaplugin/ grafanaplugin/
-RUN apt-get -y upgrade && \
-    apt-get -y update && \
-    apt-get install -y git && git clone https://github.com/taosdata/grafanaplugin.git && \
-    cp -r grafanaplugin/dist /var/lib/grafana/plugins/tdengine && \
-    rm -rf grafanaplugin && \
-    sed -i 's/;allow_loading_unsigned_plugins =/;allow_loading_unsigned_plugins = taosdata-tdengine-datasource/g' /etc/grafana/grafana.ini
+#ARG PLUGIN_VERSION=3.1.2
+ENV GF_INSTALL_PLUGINS=https://github.com/taosdata/grafanaplugin/releases/download/v3.1.3/tdengine-datasource-3.1.3.zip;tdengine-datasource
 USER grafana
 ENTRYPOINT [ "/run.sh" ]
