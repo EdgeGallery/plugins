@@ -7,7 +7,5 @@
 # Vestibulum commodo. Ut rhoncus gravida arcu.
 #
 
-rm -rf profile-manager
-go build .
 BUILD_VERSION=latest
 docker build --no-cache -t edgegallery/profile-manager:${BUILD_VERSION} .

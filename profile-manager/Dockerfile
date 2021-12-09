@@ -12,11 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM swr.cn-north-4.myhuaweicloud.com/eg-common/ubuntu:20.04
-#RUN apk update && apk add libc6-compat
+FROM swr.cn-north-4.myhuaweicloud.com/eg-common/golang:1.14.2 as builder
+RUN apt update &&\
+    apt install libc-dev gcc
+ENV HOME=/
+WORKDIR /go/cache
+ADD go.mod .
+ADD go.sum .
+RUN go mod download
+COPY . $HOME
+WORKDIR $HOME
+# RUN GOOS=linux go build -buildmode=pie -ldflags '-linkmode "external" -extldflags "-static"' -o app
+RUN GOOS=linux go build -o app
+RUN chmod -R 550 $HOME/app
+
+
+FROM swr.cn-north-4.myhuaweicloud.com/eg-common/alpine:latest
+RUN apk update && apk add libc6-compat
 WORKDIR /
 RUN mkdir conf
-COPY profile-manager /profile-manager
-COPY conf/config.yaml /conf/config.yaml
-COPY conf/profile.yaml /conf/profile.yaml
-CMD ["sh", "-c", "/profile-manager"]
+COPY --from=builder $HOME/app $HOME
+COPY --from=builder $HOME/conf/config.yaml $HOME/conf/
+COPY --from=builder $HOME/conf/profile.yaml $HOME/conf/
+RUN ls /app
+CMD ["sh", "-c", "/app"]

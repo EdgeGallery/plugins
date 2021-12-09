@@ -13,7 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-rm -rf mqtt-simulator
-go build .
 MEP_VERSION=latest
 docker build -t edgegallery/mqtt-go-device:${MEP_VERSION} .

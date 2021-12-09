@@ -39,7 +39,7 @@ func main() {
 	devCountSt := os.Getenv("DEVICE_COUNT")
 	topic := os.Getenv("TOPIC")
 	if len(topic) == 0 {
-		topic = "Room1/conditions"
+		topic = "Room1/Condition"
 	}
 	deviceCount := 1000
 
