@@ -17,6 +17,7 @@ COPY --from=swr.cn-north-4.myhuaweicloud.com/eg-common/golang:1.14.2 /usr/local/
 ENV PATH="/usr/local/go/bin:${PATH}"
 RUN apt-get update && apt-get install -y ca-certificates openssl gcc cmake build-essential
 ENV HOME=/
+ENV GOPROXY=https://goproxy.cn
 WORKDIR /go/cache
 ADD go.mod .
 ADD go.sum .
