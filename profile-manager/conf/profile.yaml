@@ -18,6 +18,20 @@ profile:
           scale: 0.2
           offset: 1
           installPlugin: true
+        - type: dnp3
+          asset: dnp3_01
+          master_id: 1
+          outstation_tcp_address: 192.168.17.43
+          outstation_tcp_port: 20001
+          outstation_id: 10
+          outstation_scan_interval: 30
+          data_fetch_timeout: 5
+          installPlugin: true
+        - type: csv
+          asset: sensor
+          file: /var/sample.csv
+          datapoint: temp
+          installPlugin: true
   - kuiper:
       stream:
         - sql: 'create stream events () WITH ( datasource = "fledge", FORMAT = "json")'

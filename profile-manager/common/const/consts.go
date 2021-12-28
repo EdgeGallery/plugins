@@ -38,6 +38,11 @@ const SubscribeOPCUAService = "{\"name\": \"%s\", \"type\": \"%s\", \"plugin\" :
 const SubscribeModbusService = "{\"name\": \"%s\", \"type\": \"%s\", \"plugin\" :\"%s\",\"enabled\":true,\"config\": " +
 	"{\"protocol\":{\"value\":\"TCP\"},\"address\":{\"value\": \"%s\"}, \"port\":{\"value\": \"%s\"},\"map\":{\"value\":{\"values\":[{\"name\":\"%s\",\"slave\":%d,\"assetName\":\"%s\",\"register\":%d,\"scale\":%f,\"offset\":%d}]}}}}"
 
+const SubscribeDNP3Service = "{\"name\": \"%s\", \"type\": \"%s\", \"plugin\" :\"%s\",\"enabled\":true,\"config\": " +
+	"{\"asset\":{\"value\":\"%s\"},\"master_id\":{\"value\": \"%s\"},\"outstation_tcp_address\":{\"value\": \"%s\"},\"outstation_tcp_port\":{\"value\": \"%s\"},\"outstation_id\":{\"value\": \"%s\"},\"outstation_scan_interval\":{\"value\": \"%s\"},\"data_fetch_timeout\":{\"value\": \"%s\"}}}"
+
+const SubscribeCsvService = "{\"name\": \"%s\", \"type\": \"%s\", \"plugin\" :\"%s\",\"enabled\":true,\"config\": {\"asset\": {\"value\": \"%s\"}, \"datapoint\": {\"value\": \"%s\"},\"file\": {\"value\": \"%s\"}}}"
+
 const SubscribePath = "/fledge/service"
 const NorthService = "{\"name\":\"%s\", \"plugin\":\"mqtt_north\", \"type\":\"%s\", \"enabled\":true, \"config\": {\"brokerHost\": {\"value\": \"%s\"},\"brokerPort\": {\"value\": \"%d\"},\"topic\": {\"value\": \"%s\"}}}"
 

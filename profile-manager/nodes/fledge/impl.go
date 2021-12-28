@@ -40,6 +40,15 @@ type ModBusInfo struct {
 	scale float64
 	offset int64
 }
+type DNP3Info struct {
+	asset                    string
+	master_id                string
+	outstation_tcp_address   string
+	outstation_tcp_port      string
+	outstation_id            string
+	outstation_scan_interval string
+	data_fetch_timeout       string
+}
 
 func (f *FlEdge) ReadinessCheck(node *jsone.O) error {
 
@@ -197,6 +206,12 @@ func (f *FlEdge) ApplyConfig(prfCfgType string, prfCfg *jsone.A,  cfgObj *jsone.
 				}
 			}
 		}
+		if GetTypeByKey(val.(jsone.O)) == "dnp3" {
+			f.configdnp3Device(val.(jsone.O), prfCfgType, cfgObj, config)
+		}
+		if GetTypeByKey(val.(jsone.O)) == "csv" {
+			f.configCsvDevice(val.(jsone.O), prfCfgType, cfgObj, config)
+		}
 
 	}
 
@@ -207,6 +222,98 @@ func (f *FlEdge) ApplyConfig(prfCfgType string, prfCfg *jsone.A,  cfgObj *jsone.
 		return err
 	}
 
+	return nil
+}
+
+func (f *FlEdge) configdnp3Device(val jsone.O, prfCfgType string, cfgObj *jsone.O, config *jsone.O) error {
+	install := false
+	var dnp3Info DNP3Info
+	_type := ""
+	for _, key := range val.Keys() {
+		switch key {
+		case "installPlugin":
+			install, _ = val.GetBoolean(key)
+		case "outstation_tcp_port":
+			dnp3Info.outstation_tcp_port, _ = val.GetString(key)
+		case "outstation_tcp_address":
+			dnp3Info.outstation_tcp_address, _ = val.GetString(key)
+		case "asset":
+			dnp3Info.asset, _ = val.GetString(key)
+		case "master_id":
+			dnp3Info.master_id, _ = val.GetString(key)
+		case "outstation_id":
+			dnp3Info.outstation_id, _ = val.GetString(key)
+		case "outstation_scan_interval":
+			dnp3Info.outstation_scan_interval, _ = val.GetString(key)
+		case "data_fetch_timeout":
+			dnp3Info.data_fetch_timeout, _ = val.GetString(key)
+		case "type":
+			_type, _ = val.GetString(key)
+		}
+	}
+
+	//1.install plugin
+	if install {
+		err := f.installPlugin(_type, cfgObj)
+		if err != nil {
+			log.Error("Install plugin failed.", err)
+			return err
+		}
+	}
+
+	//2.add south service
+	if prfCfgType == "south" {
+		err := f.addSouthDnp3Service(prfCfgType, dnp3Info, _type, cfgObj, config)
+		if err != nil {
+			log.Error("South service add failed.", err)
+			return err
+		}
+	}
+
+	log.Info("DNP3 plugin and south service config success")
+	return nil
+}
+
+func (f *FlEdge) configCsvDevice(val jsone.O, prfCfgType string, cfgObj *jsone.O, config *jsone.O) error {
+	install := false
+	asset := ""
+	file := ""
+	datapoint := ""
+	_type := ""
+	for _, key := range val.Keys() {
+		switch key {
+		case "installPlugin":
+			install, _ = val.GetBoolean(key)
+		case "asset":
+			asset, _ = val.GetString(key)
+		case "file":
+			file, _ = val.GetString(key)
+		case "datapoint":
+			datapoint, _ = val.GetString(key)
+		case "type":
+			_type, _ = val.GetString(key)
+		}
+	}
+
+	//1.install plugin
+	if install {
+		err := f.installPlugin(_type, cfgObj)
+		if err != nil {
+			log.Error("Install plugin failed.", err)
+			return err
+		}
+	}
+
+	//2.add south service
+	if prfCfgType == "south" {
+		err := f.addSouthCsvService(prfCfgType, asset, file, datapoint, _type, cfgObj, config)
+		if err != nil {
+			log.Error("South service add failed.", err)
+			return err
+		}
+	}
+
+	log.Info("Csv plugin and south service config success")
 	return nil
 }
 
@@ -277,6 +384,35 @@ func (f *FlEdge) addSouthModbusService(srvType string, modbus ModBusInfo, cfg *j
 	}
 
 	log.Info("Subscribe modbus south service success")
+	return nil
+}
+
+func (f *FlEdge) addSouthDnp3Service(srvType string, dnp3Info DNP3Info, _type string, cfg *jsone.O, config *jsone.O) error {
+
+	url := util.GetValuesByKey(cfg, "hostUrl") + _const.SubscribePath
+	data := fmt.Sprintf(_const.SubscribeDNP3Service, "dnp3-srvc", srvType, _type, dnp3Info.asset, dnp3Info.master_id, dnp3Info.outstation_tcp_address,
+		dnp3Info.outstation_tcp_port, dnp3Info.outstation_id, dnp3Info.outstation_scan_interval, dnp3Info.data_fetch_timeout)
+	_, err := util.SendConfigToNode(url, data, "POST")
+	if err != nil {
+		log.Error(err, "Adding south service failed.")
+		return err
+	}
+
+	log.Info("Subscribe dnp3 south service success")
+	return nil
+}
+
+func (f *FlEdge) addSouthCsvService(srvType string, asset string, file string, datapoint string, _type string, cfg *jsone.O, config *jsone.O) error {
+
+	url := util.GetValuesByKey(cfg, "hostUrl") + _const.SubscribePath
+	data := fmt.Sprintf(_const.SubscribeCsvService, "Csv-srvc", srvType, "Csv", asset, datapoint, file)
+	_, err := util.SendConfigToNode(url, data, "POST")
+	if err != nil {
+		log.Error(err, "Adding south service failed.")
+		return err
+	}
+
+	log.Info("Subscribe CSV south service success")
 	return nil
 }
 
