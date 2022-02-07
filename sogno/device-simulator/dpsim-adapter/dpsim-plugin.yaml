@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dpsim-adapter
+  name: dpsim-adapter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dpsim-adapter
+  template:
+    metadata:
+      labels:
+        app: dpsim-adapter
+    spec:
+      containers:
+        - image: bhanusoni/dpsim-adapter:latest
+          name: dpsim-adapter
+          imagePullPolicy: Always
+          env:
+            - name: MQTT_EMQX_BROKER
+              value: mqtt
+              #- name: MQTT_EMQX_PORT
+              #value: 1883
+            - name: MQTT_EMQX_USER
+              value: admin
+            - name: MQTT_EMQX_PWD
+              value: 'public'
+
+

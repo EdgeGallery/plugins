@@ -20,6 +20,7 @@ const (
 	FledgeStr   = "fledge"
 	KuiperStr   = "kuiper"
 	TdEngineStr = "tdengine"
+	SognoStr = "sogno"
 )
 
 const (
@@ -58,3 +59,7 @@ const TdEngineFmt = "{\"brokerAddr\": {\"host\": \"%s\",\"port\": %d},\"dbAddr\"
 	"\"tableNameJqPath\": \"_tableNameJqPath_\",\"dataMapping\": _dataMapping_}]}"
 const TdEngine = "/api/v1/resource"
 const Delay = 30
+
+//sogno
+const SognoService = "{\"brokerHost\": \"%s\", \"brokerPort\": \"%s\", \"topic\": \"%s\"}"
+const SognoPath = "/sogno/fledgeadapter/topic"

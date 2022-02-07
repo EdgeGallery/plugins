@@ -20,6 +20,10 @@ config:
       default:
         dbName: iotdb
         sTable: meters
+  sogno:
+    hostUrl: http://localhost:8000
+    readiness:
+      httpGet: /sogno/fledgeadapter/ping
 
 broker:
   host: mqtt

@@ -21,6 +21,7 @@ import (
 	"profile-manager/nodes/fledge"
 	"profile-manager/nodes/kuiper"
 	"profile-manager/nodes/nodeif"
+	"profile-manager/nodes/sogno"
 	"profile-manager/nodes/tdengine"
 )
 
@@ -32,6 +33,8 @@ func GetProfileNode(name string) nodeif.Node {
 		return &kuiper.Kuiper{}
 	case _const.TdEngineStr:
 		return &tdengine.TdEngine{}
+	case _const.SognoStr:
+		return &sogno.SognoAdpt{}
 	}
 	return nil
 }

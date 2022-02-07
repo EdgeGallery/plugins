@@ -53,3 +53,8 @@ profile:
             - field: temperature
               jqPath: .temperature
               dataType: TINYINT
+  - sogno:
+      south:
+        - brokerHost: mqtt
+          brokerPort: "1883"
+          topic: fledge

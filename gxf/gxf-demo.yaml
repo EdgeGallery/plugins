@@ -1,0 +1,85 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gxf-publiclight
+  name: gxf-publiclight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gxf-publiclight
+  template:
+    metadata:
+      labels:
+        app: gxf-publiclight
+    spec:
+      containers:
+        - env:
+            - name: PGPASSWORD
+              value: ''
+          image: bhanusoni/gxf-publiclight:latest
+          name: gxf-publiclight
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gxf-publiclight
+  name: gxf-publiclight
+spec:
+  type: NodePort
+  ports:
+    - name: "gxf-publiclight"
+      port: 443
+      targetPort: 443
+      nodePort: 31300
+      protocol: TCP
+  selector:
+    app: gxf-publiclight
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gxf-device-simulator
+  name: gxf-device-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      labels:
+        app: gxf-device-simulator
+    spec:
+      containers:
+        - env:
+            - name: PGPASSWORD
+              value: ''
+          image: bhanusoni/gxf-device-simulator:latest
+          name: gxf-device-simulator
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gxf-device-simulator
+  name: gxf-device-simulator
+spec:
+  type: NodePort
+  ports:
+    - name: "gxf-device-simulator"
+      port: 443
+      targetPort: 443
+      nodePort: 31301
+      protocol: TCP
+    - name: "gxf-device"
+      port: 12122
+      targetPort: 12122
+      protocol: TCP
+  selector:
+    app: gxf-device-simulator
