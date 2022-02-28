@@ -11,7 +11,7 @@ Note: huge page is required
 host = "mqtt" # service name of emqx broker
 port = 1883 # internal port of emqx broker
 username = "admin"  # username of emqx broker
-password = "****"   # password of emqx broker
+password = "public"   # password of emqx broker
 out = {
        publish = "/fledge"
 }

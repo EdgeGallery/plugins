@@ -51,8 +51,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      app: gxf-device-simulator
+  template:
+    metadata:
       labels:
-        app: gxf-device-simulator
+        app: gxf-publiclight
     spec:
       containers:
         - env:

@@ -6,6 +6,11 @@
 ```Note: Kubernetes and helm are required. Huge pages is required if one's using device simulator. ```
 
 ```
+1. Deploy sogno profile from installer repo. 
+   Take the yaml file from [here](https://gitee.com/edgegallery/installer/ProfileManagment/SampleSognoProfile/sogno-profile-deploy.yaml)
+
+2. start Device simulator:
+Prerequisite: it need 1024 huge pages enabled in k8s cluster
 # Verify HugePages
 cat /proc/meminfo | grep Huge
 
@@ -38,16 +43,31 @@ Hugetlb:         2097152 kB
 If you don't see 1024 next to HugePages_Total, you may need to restart
 your system and try again with a fresh boot.
 
-# Restart k3s service to apply changes
-sudo systemctl restart k3s    # If you are using k8s then restart k8s
-
-# Ensure the KUBECONFIG env is still set correctly
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+# Restart k8s service to apply changes
+sudo systemctl restart kubelet
 ```
 
-1. Deploy sogno profile from installer repo. Take the yaml file from [here](https://gitee.com/edgegallery/installer/ProfileManagment/SampleSognoProfile/sogno-profile-deploy.yaml)
-2. Deploy device simulator using [this](device-simulator/dpsim/README.md) README file. Huge pages is required for device simulator. Once you enable Huge page then restart k8s. Not deploy it in edge gallery environment.
-3. Deploy dp-sim adapter using [this](device-simulator/dpsim-adapter/dpsim-plugin.yaml) yaml file.
-4. Deploy application using [README](application/README.md) file. Helm is required to install these application.
-5. Check the grafana using https://localhost:31230 . Make sure that every thing is working.
-NOTE: grafana username is demo and password is demo.
+
+Now Deploy device simulator using [this](device-simulator/dpsim/README.md) README file. 
+ Huge pages is required for device simulator.  
+Deploy dp-sim adapter using [this](device-simulator/dpsim-adapter/dpsim-plugin.yaml) yaml file.
+
+Next Deploy Application
+Deploy application using [README](application/README.md) file. Helm is required to install these application.
+ Check the grafana using https://localhost:31230 . Make sure that every thing is working.
+ NOTE: grafana username is demo and password is demo.
+
+Some common troubleshoot for k8s enviorment:
+For application deployment:
+- if rabbitMq pod failed with below error:
+/opt/bitnami/scripts/librabbitmq.sh: line 750: ulimit: open files: cannot modify limit: Operation not permitted
+
+Then make change in helm chart for below enviorment value:
+make this env as empty string
+RABBITMQ_ULIMIT_NOFILES ""
+
+- If influx DB failed with PVC not able to bound 
+  make exiting storage class as defoult and delete pvc.
+  then restart helm
+
+- 

@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster
+FROM swr.cn-north-4.myhuaweicloud.com/eg-common/python:3.8-slim
 RUN mkdir -p /usr/app
 ENV APP_HOME=/usr/app
 
